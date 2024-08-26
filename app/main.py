@@ -52,7 +52,7 @@ app.include_router(users_router.auth_router)
 
 # Local Government
 app.include_router(lga_router.state_router)
-# app.include_router(lga_router.lga_router)
+app.include_router(lga_router.lga_router)
 
 
 # Helper

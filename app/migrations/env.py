@@ -11,6 +11,7 @@ from app.config.database import Base
 from app.access_control import models  # noqa
 from app.user import models  # noqa
 from app.lga import models  # noqa
+from app.profile import models
 
 
 # this is the Alembic Config object, which provides
