@@ -1,0 +1,6 @@
+{
+    "strict": [
+        "app/alumni"
+    ],
+    "analyzeUnannotatedFunctions": true
+}

@@ -1,0 +1,42 @@
+# Bissmillahirrahmanirraheem
+
+version: "3.8"
+services:
+  
+  database:
+    container_name: abu-alumni-postgres
+    image: postgres:12
+    volumes:
+      - app-db-data:/var/lib/postgresql/data/pgdata
+      - sql:/docker-entrypoint-initdb.d
+    env_file:
+      - .env
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    networks:
+      - localnet
+      - default
+  
+  backend:
+    container_name: abu-alumni-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - database
+    environment:
+      - environment=LOCALDOCKER
+    env_file:
+      - .env
+    networks:
+      - localnet
+      - default
+    ports:
+      - "8000:8000"
+  
+volumes:
+  app-db-data:
+  sql:
+
+networks:
+  localnet:
