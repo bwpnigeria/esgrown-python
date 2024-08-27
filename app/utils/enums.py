@@ -20,6 +20,13 @@ class Gender(str, Enum):
     na = "NA"
 
 
+class AccounType(str, Enum):
+    student = "student"
+    teacher = "teacher"
+    business = "business"
+    private = "private"
+
+
 class FileFormat(str, Enum):
     pdf = ".pdf"
     excel = ".xlsx"
