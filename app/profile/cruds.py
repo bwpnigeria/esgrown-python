@@ -167,59 +167,20 @@ def search_profile(
         models.Individual,
         search.search,
         search.search_fields,
-        join_search=search.join_search,
         skip=search.skip,
         limit=search.limit,
         order=search.order,
     )
 
-# def list_profile(
-#     cu: CrudUtil,
-#     filter: schemas.IndividualFilter,
-# ) -> Any:
-#     return cu.list_model(
-#         models.Individual,
-#         filter.model_dump(exclude_unset=True),
-#     )
 
-# def search_profile(
-#     cu: CrudUtil,
-#     search: schemas.IndividualSearch,
-# ) -> Any:
-#     return cu.search_model(
-#         models.Individual,
-#         search.search,
-#         search.search_fields,
-#         join_search=search.join_search,
-#         skip=search.skip,
-#         limit=search.limit,
-#         order=search.order,
-#     )
 
-# def delete_profile(
-#     cu: CrudUtil,
-#     uuid: str,
-# ) -> dict[str, Any]:
-#     db_profile: models.Individual = cu.get_model_or_404(
-#         models.Individual,
-#         {"uuid": uuid},
-#     )
+def delete_profile(
+    cu: CrudUtil,
+    uuid: str,
+) -> dict[str, Any]:
 
-#     # we remove the user group
-#     try:
-#         db_profile.user.groups.remove(get_group_by_name(cu, "normal_user_group"))
-#     except ValueError:
-#         pass
-
-#     # now delete the profile
-#     cu.delete_model(
-#         models.Individual,
-#         {"uuid": uuid},
-#         autocommit=False,
-#     )
-
-#     return delete_user(
-#         cu,
-#         str(db_profile.user_id),
-#         autocommit=True,
-#     )
+    # now delete the profile
+    return cu.delete_model(
+        models.Individual,
+        {"uuid": uuid},
+    )

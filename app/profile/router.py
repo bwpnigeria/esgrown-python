@@ -113,3 +113,16 @@ async def search_profile(
     search: schemas.IndividualSearch = Depends(),
 ) -> Any:
     return cruds.search_profile(cu, search)
+
+
+
+@individual_router.delete(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["individual:delete"]))],
+)
+async def delete_profile(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> dict[str, Any]:
+    return cruds.delete_profile(cu, uuid)

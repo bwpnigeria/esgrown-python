@@ -30,6 +30,19 @@ class UserIn(BaseModel):
     )
 
 
+class UserAccountIn(BaseModel):
+    email: EmailStr | None = Field(
+        default_factory=gen_email, description="Email address of the user"
+    )
+    firstname: UpStr
+    lastname: UpStr
+    password: str
+    middlename: UpStr | None = None
+    phone: str | None = Field(
+        default_factory=gen_random_phone, description="Phone number of the user"
+    )
+
+
 class UserCreate(BaseModel):
     email: EmailStr
     temp_password_hash: str = ""
@@ -61,6 +74,24 @@ class UserCreate(BaseModel):
     @property
     def is_temp_phone(self) -> bool:
         return self.phone.startswith("4134") if self.phone else False
+
+    @computed_field
+    @property
+    def fullname(self) -> str:
+        return f"{self.firstname} {self.middlename if self.middlename else ''} {self.lastname}".strip()
+    
+
+class UserAccountCreate(BaseModel):
+    email: EmailStr
+    password: str
+    temp_password_hash: str = ""
+    password_hash: str = ""
+    firstname: str
+    lastname: str
+    middlename: Optional[str]
+    is_admin: bool
+    can_login: bool = True
+    phone: str | None = None
 
     @computed_field
     @property
@@ -116,6 +147,14 @@ class AdminUserFilter(BaseModel):
 class ChangePasswordFromDashboard(BaseModel):
     current_password: str
     new_password: str
+
+
+class UserMinSchema(BaseSchemaMixin):
+    email: EmailStr
+    firstname: UpStr
+    lastname: UpStr
+    middlename: UpStr | None = ""
+    phone: str | None = None
 
 
 class UserSchema(BaseSchemaMixin):
@@ -175,7 +214,11 @@ class Token(BaseModel):
     permissions: list[str] | None = None
 
 
-# class Login(BaseModel, plugin_settings=PluginSettings(logfire={"record": "all"})):
+class UserToken(BaseModel):
+    access_token: str
+    token_type: str
+
+
 class Login(BaseModel):
     email_or_phone: str = Field(
         description="Email address or phone number of the user",

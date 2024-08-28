@@ -13,20 +13,19 @@ from sqlalchemy import (
     ForeignKey,
 )
 
-from app.mixins.columns import BaseMixin
+from app.mixins.columns import BaseModelMixin
 from app.config.database import Base
 
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declared_attr
 
-class Individual(BaseMixin, Base):
+class Individual(BaseModelMixin, Base):
     email = Column(String(100), nullable=False, unique=True)
     firstname = Column(String(100), nullable=False)
     lastname = Column(String(100), nullable=False)
     middlename = Column(String(100), nullable=True)
     password_hash = Column(String(255), nullable=False)
     phone = Column(String(32), nullable=True)
-    nationality = Column(String(60), nullable=True)
     state_id = Column(String(45), ForeignKey("states.uuid"), nullable=True)
     lga_id = Column(String(45), ForeignKey("localgovernments.uuid"), nullable=True)
     address = Column(String(255), nullable=True)
@@ -35,7 +34,7 @@ class Individual(BaseMixin, Base):
     account_type = Column(String(100), nullable=False)
     photo = Column(String(255), nullable=True)
 
-    # @declared_attr
-    # def creator(cls: Any) -> Any:
-    #     return relationship("User", lazy="joined", foreign_keys=[cls.created_by])
+    @declared_attr
+    def creator(cls: Any) -> Any:
+        return relationship("User", lazy="joined", foreign_keys=[cls.created_by])
     
