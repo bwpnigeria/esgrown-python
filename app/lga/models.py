@@ -15,8 +15,15 @@ from app.config.database import Base
 from app.mixins.columns import BaseModelMixin
 
 
+class Country(BaseModelMixin, Base):
+    name = Column(String(45), nullable=False, unique=True)
+
+
 class State(BaseModelMixin, Base):
     name = Column(String(45), nullable=False, unique=True)
+    country_id = Column(String(45), ForeignKey('countries.uuid'), nullable=False)
+
+    country = relationship('Country', lazy="joined", foreign_keys=[country_id])
 
 
 class LocalGovernment(BaseModelMixin, Base):
