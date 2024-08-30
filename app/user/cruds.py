@@ -52,15 +52,13 @@ def create_user_account(
     is_admin: bool = False,
     can_login: bool = True,
 ) -> models.User:
-    # password and hash generated in class using validators
-    user_data.password = get_password_hash(user_data.password)
     
     user_to_create = schemas.UserAccountCreate(
         **user_data.model_dump(),
         is_admin=is_admin,
         can_login=can_login,
-        password_hash=user_data.password,
-        temp_password_hash=user_data.password
+        password_hash=get_password_hash(user_data.password),
+        temp_password_hash=get_password_hash(user_data.password)
     )
 
     cu.ensure_unique_model(

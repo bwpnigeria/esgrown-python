@@ -44,6 +44,7 @@ class UserMin(BaseModel):
     firstname: str
     lastname: str
     middlename: str | None = ""
+    phone: str | None = ""
 
 
 class Processor(BaseModel):

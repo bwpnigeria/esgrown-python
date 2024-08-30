@@ -12,7 +12,7 @@ from sqlalchemy import and_, or_
 from app.access_control.cruds import get_group_by_name
 from app.mixins.commons import Gender
 from app.mixins.schemas import OrderType
-from app.user.cruds import create_user, delete_user, update_user
+from app.user.cruds import update_user, create_user_account, delete_user
 from app.user.models import User
 from app.utils.crud_util import CrudUtil
 from app.profile import models, schemas
@@ -27,25 +27,34 @@ def create_profile(
     cu: CrudUtil,
     individual: schemas.IndividualIn,
 ) -> schemas.IndividualOut | models.Individual:
-    # Ensure profile is unique
-    cu.ensure_unique_model(
-        models.Individual,
-        {"email": individual.email, "phone": individual.phone},
+    
+    user = create_user_account(
+        cu,
+        user_data= individual.user,
+        autocommit=False,
+        can_login=True,
     )
 
-    # Hash the password
-    hashed_password = get_password_hash(password=individual.password)
-
+    try:
+        user.groups.append(get_group_by_name(cu, "private_user_group"))
+    except Exception:
+        cu.db.rollback()
+        raise HTTPException(
+            status_code=403,
+            detail="User group not found, it should be created",
+        )
+    
     # Create the individual model
-    individual_request: models.Individual = cu.create_model(
+    db_profile: models.Individual = cu.create_model(
         models.Individual,
         schemas.IndividualCreate(
-            **individual.model_dump(),
-            password_hash=hashed_password,
+            user_id=str(user.uuid),
+            user=user,
+            **individual.model_dump(exclude={"user"}),
         ),
     )
 
-    return individual_request
+    return db_profile
 
 
 def upload_own_photo(
@@ -122,6 +131,14 @@ def update_profile(
         {"uuid": uuid},
     )
 
+    if individual.user:
+        update_user(
+            cu,
+            str(db_individual.user.uuid),
+            individual.user,
+            autocommit=False,
+        )
+
     db_individual: models.Individual = cu.update_model(
         models.Individual,
         individual,
@@ -133,7 +150,7 @@ def update_profile(
 
 def update_own_profile(
     cu: CrudUtil,
-    profile: schemas.IndividualUpdate,
+    profile: schemas.IndividualUpdateSelf,
     user: UserSchema,
 ) -> schemas.IndividualOut | models.Individual:
     db_profile: models.Individual = cu.get_model_or_404(
@@ -149,9 +166,11 @@ def update_own_profile(
             profile.user,
             autocommit=False,
         )
+
     db_profile.address = profile.address or db_profile.address  # type: ignore
     db_profile.date_of_birth = profile.date_of_birth or db_profile.date_of_birth  # type: ignore
     db_profile.gender = profile.gender or db_profile.gender  # type: ignore
+    db_profile.photo = profile.photo or db_profile.photo # type: ignore
 
     cu.db.commit()
     cu.db.refresh(db_profile)
@@ -179,8 +198,24 @@ def delete_profile(
     uuid: str,
 ) -> dict[str, Any]:
 
-    # now delete the profile
-    return cu.delete_model(
+    db_individual: models.Individual = cu.get_model_or_404(
         models.Individual,
         {"uuid": uuid},
+    )
+
+    try:
+        db_individual.user.groups.remove(get_group_by_name(cu, "private_user_group"))
+    except ValueError:
+        pass
+
+    # now delete the profile
+    cu.delete_model(
+        models.Individual,
+        {"uuid": uuid},
+    )
+
+    return delete_user(
+        cu,
+        str(db_individual.user.uuid),
+        autocommit=True
     )

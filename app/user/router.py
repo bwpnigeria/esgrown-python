@@ -135,18 +135,6 @@ def create_admin_user(
     return cruds.create_user(cu, user_data, is_admin=True)
 
 
-@users_router.post(
-    "/user-account", 
-    status_code=201, dependencies=[Depends(deps.HasPermission(["account:create"]))]
-)
-def create_user_account(
-    *,
-    cu: CrudUtil = Depends(CrudUtil),
-    user_data: schemas.UserAccountIn,
-) -> schemas.UserSchema:
-    return cruds.create_user_account(cu, user_data, is_admin=False, can_login=True)
-
-
 @users_router.get(
     "",
     response_model=schemas.UserList,

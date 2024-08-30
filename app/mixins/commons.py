@@ -11,7 +11,7 @@ from enum import Enum
 from typing import Any
 
 
-from app.mixins.schemas import BaseModelPublic, BaseSchemaMixin
+from app.mixins.schemas import BaseModelPublic, BaseSchemaMixin, UserMin
 from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
 from datetime import date
 
@@ -157,14 +157,6 @@ class ListBase(BaseModel):
 class FilterBase(BaseModel):
     skip: int
     limit: int
-
-
-class UserMin(BaseSchemaMixin):
-    email: EmailStr
-    firstname: UpStr
-    lastname: UpStr
-    middlename: UpStr | None = ""
-    phone: str | None
 
 
 class UserPublic(BaseModel):

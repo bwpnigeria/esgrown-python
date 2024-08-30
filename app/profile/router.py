@@ -66,7 +66,7 @@ async def get_profile(
 
 @individual_router.get(
     "/own/profile",
-    dependencies=[Depends(HasPermission(["individual:read_own_profile"]))],
+    dependencies=[Depends(HasPermission(["individual:read_individual_own_profile"]))],
 )
 async def get_own_profile(
     *,
@@ -97,7 +97,7 @@ async def update_own_profile(
     *,
     cu: CrudUtil = Depends(CrudUtil),
     user: UserSchema = Depends(get_current_user),
-    individual: schemas.IndividualUpdate,
+    individual: schemas.IndividualUpdateSelf,
 ) -> schemas.IndividualOut:
     return cruds.update_own_profile(cu, individual, user)
 
@@ -113,7 +113,6 @@ async def search_profile(
     search: schemas.IndividualSearch = Depends(),
 ) -> Any:
     return cruds.search_profile(cu, search)
-
 
 
 @individual_router.delete(

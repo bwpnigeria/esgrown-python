@@ -36,11 +36,8 @@ class UserAccountIn(BaseModel):
     )
     firstname: UpStr
     lastname: UpStr
-    password: str
     middlename: UpStr | None = None
-    phone: str | None = Field(
-        default_factory=gen_random_phone, description="Phone number of the user"
-    )
+    password: str
 
 
 class UserCreate(BaseModel):
@@ -147,14 +144,6 @@ class AdminUserFilter(BaseModel):
 class ChangePasswordFromDashboard(BaseModel):
     current_password: str
     new_password: str
-
-
-class UserMinSchema(BaseSchemaMixin):
-    email: EmailStr
-    firstname: UpStr
-    lastname: UpStr
-    middlename: UpStr | None = ""
-    phone: str | None = None
 
 
 class UserSchema(BaseSchemaMixin):

@@ -15,10 +15,9 @@ from app.mixins.schemas import (
     BaseModelOut,
     JoinSearch,
 )
-from app.user.models import User
-from app.user.schemas import UserIn, UserUpdate, UserUpdateSelf
+from app.user.schemas import UserAccountIn, UserSchema, UserUpdate, UserUpdateSelf
 from app.utils.custom_validators import CapStr, UpStr
-from app.mixins.commons import ListBase, UserMin, UserPublic
+from app.mixins.commons import ListBase, UserMin
 from app.lga.schemas import LocalGovernmentMin, StateMin
 from app.utils.enums import Gender, AccounType
 from pydantic import (
@@ -33,52 +32,55 @@ from pydantic import (
 
 
 class IndividualIn(BaseModelIn):
-    email: str
-    firstname: CapStr
-    lastname: CapStr
-    phone: str
-    address: UpStr | None = None
-    date_of_birth: UpStr | None = None
-    gender: Gender | None = None
+    date_of_birth: UpStr 
+    gender: Gender 
     account_type: AccounType 
-    password: str
-
-
-class IndividualCreate(BaseModel):
-    email: str
-    phone: str
-    firstname: CapStr
-    lastname: CapStr
-    address: UpStr
-    gender: Gender
-    account_type: AccounType  
-    date_of_birth: UpStr
-    password_hash: str
-
-
-class IndividualUpdate(BaseModelIn):
-    email: str | None = None
-    firstname: CapStr | None = None
-    lastname: CapStr | None = None
-    phone: str | None = None
     address: UpStr | None = None
-    date_of_birth: UpStr | None = None
-    gender: Gender | None = None
-    nationality: CapStr | None = None
     state_id: str | None = None
     lga_id: str | None = None
     photo: str | None = None
 
+    user: UserAccountIn
 
-class IndividualFilter(BaseModelFilter):
-    email: str | None = None
-    firstname: CapStr | None = None
-    lastname: CapStr | None = None
-    phone: str | None = None
+
+class IndividualCreate(BaseModel):
+    user_id: str
+    gender: Gender
+    address: UpStr
+    account_type: AccounType
+    date_of_birth: UpStr
+    photo: str | None = None
+
+    user: UserSchema
+
+
+class IndividualUpdate(BaseModelIn):
     address: UpStr | None = None
     date_of_birth: UpStr | None = None
     gender: Gender | None = None
-    nationality: CapStr | None = None
+    account_type: AccounType | None = None
+    state_id: str | None = None
+    lga_id: str | None = None
+    photo: str | None = None
+
+    user: UserUpdate | None = Field(None, exclude=True)
+
+
+class IndividualUpdateSelf(BaseModelIn):
+    address: UpStr | None = None
+    date_of_birth: UpStr | None = None
+    gender: Gender | None = None
+    account_type: AccounType | None = None
+    photo: str | None = None
+
+    user: UserUpdateSelf | None = Field(None, exclude=True)
+
+
+class IndividualFilter(BaseModelFilter):
+    address: UpStr | None = None
+    date_of_birth: UpStr | None = None
+    gender: Gender | None = None
+    account_type: AccounType | None = None
     state_id: str | None = None
     lga_id: str | None = None
     photo: str | None = None
@@ -88,14 +90,10 @@ class IndividualSearch(BaseModelSearch):
     @computed_field
     @property
     def search_fields(self) -> list[str]:
-        return ["firstname", "lastname", "email", "phone"]
+        return ["gender", "address", "date_of_birth", "account_type"]
 
 
 class IndividualOut(BaseModelMin):
-    email: str
-    firstname: CapStr
-    lastname: CapStr
-    nationality: CapStr | None = None
     address: UpStr 
     date_of_birth: UpStr 
     gender: Gender 
@@ -104,6 +102,7 @@ class IndividualOut(BaseModelMin):
     state: StateMin | None = None
     lga: LocalGovernmentMin | None = None
 
+    user: UserMin
 
 
 class IndividualList(ListBase):
