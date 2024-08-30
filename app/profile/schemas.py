@@ -20,6 +20,8 @@ from app.utils.custom_validators import CapStr, UpStr
 from app.mixins.commons import ListBase, UserMin
 from app.lga.schemas import LocalGovernmentMin, StateMin
 from app.utils.enums import Gender, AccounType
+from app.user.models import User
+
 from pydantic import (
     BaseModel,
     RootModel,
@@ -91,6 +93,15 @@ class IndividualSearch(BaseModelSearch):
     @property
     def search_fields(self) -> list[str]:
         return ["gender", "address", "date_of_birth", "account_type"]
+
+    @computed_field
+    @property
+    def join_search(self) -> list[JoinSearch]:
+        return [
+            JoinSearch(model=User, column="firstname", onkey="user_id"),
+            JoinSearch(model=User, column="lastname", onkey="user_id"),
+            JoinSearch(model=User, column="email", onkey="user_id"),
+        ]
 
 
 class IndividualOut(BaseModelMin):

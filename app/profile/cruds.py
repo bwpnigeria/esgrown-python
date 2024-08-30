@@ -186,6 +186,7 @@ def search_profile(
         models.Individual,
         search.search,
         search.search_fields,
+        join_search=search.join_search,
         skip=search.skip,
         limit=search.limit,
         order=search.order,
