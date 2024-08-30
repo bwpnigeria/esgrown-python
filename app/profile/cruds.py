@@ -193,7 +193,6 @@ def search_profile(
     )
 
 
-
 def delete_profile(
     cu: CrudUtil,
     uuid: str,
