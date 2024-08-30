@@ -194,6 +194,19 @@ def change_own_password(
     return cruds.change_own_password(cu, user)
 
 
+@users_router.put(
+    path="/users/change_password/account",
+    dependencies=[Depends(deps.HasPermission(["user:change_own_account_password"]))],
+)
+def change_own_account_password(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    user: schemas.UserSchema = Depends(deps.get_current_user),
+    password: schemas.ResetPassword,
+) -> Any:
+    return cruds.change_own_account_password(cu, user, password.password)
+
+
 @users_router.delete(
     "/{uuid}", dependencies=[Depends(deps.HasPermission(["admin:delete"]))]
 )

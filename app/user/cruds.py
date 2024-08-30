@@ -300,3 +300,19 @@ def change_own_password(
     cu.db.commit()
     send_change_password_mail(str(db_user.email), password)
     return schemas.PasswordChangeOut(password=password)
+
+
+def change_own_account_password(
+    cu: CrudUtil,
+    user: schemas.UserSchema,
+    password: str
+) -> Any:
+    db_user: models.User = cu.get_model_or_404(
+        model_to_get=models.User, model_conditions={"uuid": user.uuid}
+    )
+
+    hashed_password = get_password_hash(password)
+
+    db_user.temp_password_hash = hashed_password
+    cu.db.commit()
+    return {"message": "Password has been changed."}
