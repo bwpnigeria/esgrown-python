@@ -23,6 +23,7 @@ class Gender(str, Enum):
 class AccounType(str, Enum):
     student = "student"
     teacher = "teacher"
+    staff = "staff"
     business = "business"
     private = "private"
 

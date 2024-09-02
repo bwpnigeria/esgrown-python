@@ -19,33 +19,75 @@ from app.mixins.schemas import (
 from app.utils.custom_validators import UpStr
 
 
+# ======================[ Country ]======================
+
+class CountryIn(BaseModelIn):
+    name: UpStr
+
+
+class CountryCreate(BaseModelCreate):
+    name: UpStr
+
+
+class CountryUpdate(BaseModelIn):
+    name: UpStr | None = None
+
+
+class CountryFilter(BaseModelFilter):
+    name: UpStr | None = None
+
+
+class CountryOut(BaseModelOut):
+    name: UpStr
+
+
+class CountryMin(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    uuid: str
+    name: UpStr
+
+
+class CountryList(ListBase):
+    items: list[CountryOut]
+
+
 # ======================[ State ]======================
 
 
 class StateIn(BaseModelIn):
     name: UpStr
+    country_id: str
 
 
 class StateCreate(BaseModelCreate):
     name: UpStr
+    country_id: str
 
 
 class StateUpdate(BaseModelIn):
     name: UpStr | None = None
+    country_id: str | None = None
 
 
 class StateFilter(BaseModelFilter):
     name: UpStr | None = None
+    country_id: str | None = None
 
 
 class StateOut(BaseModelOut):
     name: UpStr
+    country_id: str
+
+    country: CountryMin
 
 
 class StateMin(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     uuid: str
     name: UpStr
+    country_id: str
+
+    country: CountryMin
 
 
 class StateList(ListBase):

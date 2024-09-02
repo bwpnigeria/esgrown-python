@@ -23,7 +23,7 @@ class State(BaseModelMixin, Base):
     name = Column(String(45), nullable=False, unique=True)
     country_id = Column(String(45), ForeignKey('countries.uuid'), nullable=False)
 
-    country = relationship('Country', lazy="joined", foreign_keys=[country_id])
+    country: Any = relationship('Country', lazy="joined", foreign_keys=[country_id])
 
 
 class LocalGovernment(BaseModelMixin, Base):

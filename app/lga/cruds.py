@@ -15,6 +15,104 @@ from app.lga import models, schemas
 from app.user.schemas import UserSchema
 
 
+# ======================[ Country ]=======================
+
+
+def create_country(
+    cu: CrudUtil,
+    country: schemas.CountryIn,
+    user: UserSchema,
+) -> schemas.CountryOut | models.Country:
+    # ensure unique country name
+    cu.ensure_unique_model(
+        models.Country,
+        {"name": country.name},
+    )
+
+    # now create the country
+    db_country: models.Country = cu.create_model(
+        models.Country,
+        schemas.CountryCreate(
+            **country.model_dump(),
+            created_by=user.uuid,
+        ),
+    )
+
+    return db_country
+
+
+def get_country(
+    cu: CrudUtil,
+    uuid: str,
+) -> schemas.CountryOut | models.Country:
+    # get the country
+    db_country: models.Country = cu.get_model_or_404(
+        models.Country,
+        {"uuid": uuid},
+    )
+
+    return db_country
+
+
+def get_country_by_name(
+    cu: CrudUtil,
+    name: str,
+) -> schemas.CountryOut | models.Country:
+    # get the country
+    db_country: models.Country = cu.get_model_or_404(
+        models.Country,
+        {"name": name},
+    )
+
+    return db_country
+
+
+def get_all_countries(
+    cu: CrudUtil,
+) -> list[schemas.CountryOut] | list[models.Country]:
+    countries: list[models.Country] = cu.list_model(
+        models.Country,
+        {},
+    )["items"]
+
+    return countries
+
+
+def update_country(
+    cu: CrudUtil,
+    uuid: str,
+    country: schemas.CountryUpdate,
+) -> schemas.CountryOut | models.Country:
+    db_country: models.Country = cu.update_model(
+        models.Country,
+        country,
+        {"uuid": uuid},
+    )
+
+    return db_country
+
+
+def list_countries(
+    cu: CrudUtil,
+    filter: schemas.CountryFilter,
+) -> Any:
+    return cu.list_model(
+        models.Country,
+        filter.model_dump(exclude_unset=True),
+    )
+
+
+def delete_country(
+    cu: CrudUtil,
+    uuid: str,
+) -> dict[str, Any]:
+    return cu.delete_model(
+        models.Country,
+        {"uuid": uuid},
+    )
+
+
+
 # ======================[ State ]=======================
 
 
@@ -110,7 +208,6 @@ def delete_state(
         models.State,
         {"uuid": uuid},
     )
-
 
 # ======================[ Local Government ]=======================
 

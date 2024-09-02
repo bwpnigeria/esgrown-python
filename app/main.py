@@ -13,7 +13,7 @@ from app.config.config import settings
 from app.access_control import router as access_control_router
 from app.user import router as users_router
 from app.lga import router as lga_router
-from app.dashboard import router as dashboard_router
+# from app.dashboard import router as dashboard_router
 
 from app.profile import router as individual_router
 
@@ -53,6 +53,7 @@ app.include_router(users_router.users_router)
 app.include_router(users_router.auth_router)
 
 # Local Government
+app.include_router(lga_router.country_router)
 app.include_router(lga_router.state_router)
 app.include_router(lga_router.lga_router)
 

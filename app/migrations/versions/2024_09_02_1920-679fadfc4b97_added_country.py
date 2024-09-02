@@ -1,8 +1,8 @@
-"""added created_by and BaseModelMixin
+"""added country
 
-Revision ID: d13d93396bc2
+Revision ID: 679fadfc4b97
 Revises: 
-Create Date: 2024-08-27 22:00:03.274250
+Create Date: 2024-09-02 19:20:27.476410
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd13d93396bc2'
+revision = '679fadfc4b97'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -101,19 +101,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_created_at'), 'users', ['created_at'], unique=False)
     op.create_index(op.f('ix_users_date'), 'users', ['date'], unique=False)
-    op.create_table('permission_role',
-    sa.Column('permission_id', sa.String(length=50), nullable=True),
-    sa.Column('role_id', sa.String(length=50), nullable=True),
-    sa.ForeignKeyConstraint(['permission_id'], ['permissions.uuid'], ),
-    sa.ForeignKeyConstraint(['role_id'], ['roles.uuid'], )
-    )
-    op.create_table('role_group',
-    sa.Column('role_id', sa.String(length=50), nullable=True),
-    sa.Column('group_id', sa.String(length=50), nullable=True),
-    sa.ForeignKeyConstraint(['group_id'], ['groups.uuid'], ),
-    sa.ForeignKeyConstraint(['role_id'], ['roles.uuid'], )
-    )
-    op.create_table('states',
+    op.create_table('countries',
     sa.Column('name', sa.String(length=45), nullable=False),
     sa.Column('created_by', sa.String(length=50), nullable=False),
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
@@ -126,14 +114,43 @@ def upgrade() -> None:
     sa.UniqueConstraint('name'),
     sa.UniqueConstraint('uuid')
     )
-    op.create_index(op.f('ix_states_created_at'), 'states', ['created_at'], unique=False)
-    op.create_index(op.f('ix_states_date'), 'states', ['date'], unique=False)
+    op.create_index(op.f('ix_countries_created_at'), 'countries', ['created_at'], unique=False)
+    op.create_index(op.f('ix_countries_date'), 'countries', ['date'], unique=False)
+    op.create_table('permission_role',
+    sa.Column('permission_id', sa.String(length=50), nullable=True),
+    sa.Column('role_id', sa.String(length=50), nullable=True),
+    sa.ForeignKeyConstraint(['permission_id'], ['permissions.uuid'], ),
+    sa.ForeignKeyConstraint(['role_id'], ['roles.uuid'], )
+    )
+    op.create_table('role_group',
+    sa.Column('role_id', sa.String(length=50), nullable=True),
+    sa.Column('group_id', sa.String(length=50), nullable=True),
+    sa.ForeignKeyConstraint(['group_id'], ['groups.uuid'], ),
+    sa.ForeignKeyConstraint(['role_id'], ['roles.uuid'], )
+    )
     op.create_table('user_group',
     sa.Column('group_id', sa.String(length=50), nullable=True),
     sa.Column('user_id', sa.String(length=50), nullable=True),
     sa.ForeignKeyConstraint(['group_id'], ['groups.uuid'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.uuid'], )
     )
+    op.create_table('states',
+    sa.Column('name', sa.String(length=45), nullable=False),
+    sa.Column('country_id', sa.String(length=45), nullable=False),
+    sa.Column('created_by', sa.String(length=50), nullable=False),
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('uuid', sa.String(length=50), nullable=False),
+    sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['country_id'], ['countries.uuid'], ),
+    sa.ForeignKeyConstraint(['created_by'], ['users.uuid'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name'),
+    sa.UniqueConstraint('uuid')
+    )
+    op.create_index(op.f('ix_states_created_at'), 'states', ['created_at'], unique=False)
+    op.create_index(op.f('ix_states_date'), 'states', ['date'], unique=False)
     op.create_table('localgovernments',
     sa.Column('name', sa.String(length=45), nullable=False),
     sa.Column('state_id', sa.String(length=45), nullable=False),
@@ -154,12 +171,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_localgovernments_created_at'), 'localgovernments', ['created_at'], unique=False)
     op.create_index(op.f('ix_localgovernments_date'), 'localgovernments', ['date'], unique=False)
     op.create_table('individuals',
-    sa.Column('email', sa.String(length=100), nullable=False),
-    sa.Column('firstname', sa.String(length=100), nullable=False),
-    sa.Column('lastname', sa.String(length=100), nullable=False),
-    sa.Column('middlename', sa.String(length=100), nullable=True),
-    sa.Column('password_hash', sa.String(length=255), nullable=False),
-    sa.Column('phone', sa.String(length=32), nullable=True),
+    sa.Column('user_id', sa.String(length=45), nullable=False),
     sa.Column('state_id', sa.String(length=45), nullable=True),
     sa.Column('lga_id', sa.String(length=45), nullable=True),
     sa.Column('address', sa.String(length=255), nullable=True),
@@ -167,17 +179,15 @@ def upgrade() -> None:
     sa.Column('gender', sa.String(length=16), nullable=False),
     sa.Column('account_type', sa.String(length=100), nullable=False),
     sa.Column('photo', sa.String(length=255), nullable=True),
-    sa.Column('created_by', sa.String(length=50), nullable=False),
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('uuid', sa.String(length=50), nullable=False),
     sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['created_by'], ['users.uuid'], ),
     sa.ForeignKeyConstraint(['lga_id'], ['localgovernments.uuid'], ),
     sa.ForeignKeyConstraint(['state_id'], ['states.uuid'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.uuid'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('email'),
     sa.UniqueConstraint('uuid')
     )
     op.create_index(op.f('ix_individuals_created_at'), 'individuals', ['created_at'], unique=False)
@@ -193,12 +203,15 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_localgovernments_date'), table_name='localgovernments')
     op.drop_index(op.f('ix_localgovernments_created_at'), table_name='localgovernments')
     op.drop_table('localgovernments')
-    op.drop_table('user_group')
     op.drop_index(op.f('ix_states_date'), table_name='states')
     op.drop_index(op.f('ix_states_created_at'), table_name='states')
     op.drop_table('states')
+    op.drop_table('user_group')
     op.drop_table('role_group')
     op.drop_table('permission_role')
+    op.drop_index(op.f('ix_countries_date'), table_name='countries')
+    op.drop_index(op.f('ix_countries_created_at'), table_name='countries')
+    op.drop_table('countries')
     op.drop_index(op.f('ix_users_date'), table_name='users')
     op.drop_index(op.f('ix_users_created_at'), table_name='users')
     op.drop_table('users')

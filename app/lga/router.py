@@ -16,6 +16,11 @@ from app.utils.crud_util import CrudUtil
 from app.dependencies.dependencies import HasPermission, get_current_user
 
 
+country_router = APIRouter(
+    prefix="/country",
+    tags=["Country Routes"],
+)
+
 state_router = APIRouter(
     prefix="/state",
     tags=["State Routes"],
@@ -25,6 +30,84 @@ lga_router = APIRouter(
     prefix="/lga",
     tags=["Local Government Routes"],
 )
+
+# ======================[ Country ]=======================
+
+
+@country_router.post(
+    "",
+    dependencies=[Depends(HasPermission(["country:create"]))],
+)
+async def create_country(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    country: schemas.CountryIn,
+    user: UserSchema = Depends(get_current_user),
+) -> schemas.CountryOut:
+    return cruds.create_country(cu, country, user)
+
+
+@country_router.get(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["country:read"]))],
+)
+async def get_country(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> schemas.CountryOut:
+    return cruds.get_country(cu, uuid)
+
+
+@country_router.get(
+    "/name/{name}",
+    dependencies=[Depends(HasPermission(["country:read"]))],
+)
+async def get_country_by_name(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    name: str,
+) -> schemas.CountryOut:
+    return cruds.get_country_by_name(cu, name)
+
+
+@country_router.put(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["country:update"]))],
+)
+async def update_country(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+    country: schemas.CountryUpdate,
+) -> schemas.CountryOut:
+    return cruds.update_country(cu, uuid, country)
+
+
+@country_router.get(
+    "",
+    # dependencies=[Depends(HasPermission(["state:list"]))],
+    response_model=schemas.CountryList,
+)
+async def list_countries(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    filter: schemas.CountryFilter = Depends(),
+) -> Any:
+    return cruds.list_countries(cu, filter)
+
+
+@country_router.delete(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["country:delete"]))],
+)
+async def delete_country(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> dict[str, Any]:
+    return cruds.delete_country(cu, uuid)
+
 
 
 # ======================[ State ]=======================
