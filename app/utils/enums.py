@@ -27,6 +27,10 @@ class AccounType(str, Enum):
     business = "business"
     private = "private"
 
+class CooporateType(str, Enum):
+    company = "company"
+    school = "school"
+
 
 class FileFormat(str, Enum):
     pdf = ".pdf"

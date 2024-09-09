@@ -77,6 +77,7 @@ def upload_own_photo(
 
     return db_individual
 
+
 def get_profile(
     cu: CrudUtil,
     uuid: str,
@@ -88,6 +89,7 @@ def get_profile(
     )
 
     return db_individual
+
 
 def get_own_profile(
     cu: CrudUtil,
@@ -101,6 +103,7 @@ def get_own_profile(
 
     return db_individual
 
+
 def get_individual_by_user_id(
     cu: CrudUtil,
     user_id: str,
@@ -110,6 +113,7 @@ def get_individual_by_user_id(
         {"user_id": user_id},
     )
     return db_individual
+
 
 def get_all_profile(
     cu: CrudUtil,
@@ -171,6 +175,11 @@ def update_own_profile(
     db_profile.date_of_birth = profile.date_of_birth or db_profile.date_of_birth  # type: ignore
     db_profile.gender = profile.gender or db_profile.gender  # type: ignore
     db_profile.photo = profile.photo or db_profile.photo # type: ignore
+    db_profile.profession = profile.profession or db_profile.profession # type: ignore
+    db_profile.qualification = profile.qualification or db_profile.qualification # type: ignore
+    db_profile.institution = profile.institution or db_profile.institution # type: ignore
+    db_profile.programme = profile.programme or db_profile.programme # type: ignore
+    db_profile.skills = profile.skills or db_profile.skills # type: ignore
 
     cu.db.commit()
     cu.db.refresh(db_profile)
@@ -191,7 +200,6 @@ def search_profile(
         limit=search.limit,
         order=search.order,
     )
-
 
 def delete_profile(
     cu: CrudUtil,

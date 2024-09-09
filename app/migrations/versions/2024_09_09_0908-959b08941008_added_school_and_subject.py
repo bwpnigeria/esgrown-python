@@ -1,8 +1,8 @@
-"""added country
+"""added school and subject
 
-Revision ID: 679fadfc4b97
+Revision ID: 959b08941008
 Revises: 
-Create Date: 2024-09-02 19:20:27.476410
+Create Date: 2024-09-09 09:08:31.487872
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '679fadfc4b97'
+revision = '959b08941008'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -128,6 +128,21 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['group_id'], ['groups.uuid'], ),
     sa.ForeignKeyConstraint(['role_id'], ['roles.uuid'], )
     )
+    op.create_table('schools',
+    sa.Column('user_id', sa.String(length=45), nullable=False),
+    sa.Column('name', sa.String(length=255), nullable=False),
+    sa.Column('account_type', sa.String(length=100), nullable=False),
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('uuid', sa.String(length=50), nullable=False),
+    sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.uuid'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('uuid')
+    )
+    op.create_index(op.f('ix_schools_created_at'), 'schools', ['created_at'], unique=False)
+    op.create_index(op.f('ix_schools_date'), 'schools', ['date'], unique=False)
     op.create_table('user_group',
     sa.Column('group_id', sa.String(length=50), nullable=True),
     sa.Column('user_id', sa.String(length=50), nullable=True),
@@ -151,6 +166,23 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_states_created_at'), 'states', ['created_at'], unique=False)
     op.create_index(op.f('ix_states_date'), 'states', ['date'], unique=False)
+    op.create_table('subjects',
+    sa.Column('name', sa.String(length=255), nullable=False),
+    sa.Column('school_id', sa.String(length=45), nullable=False),
+    sa.Column('created_by', sa.String(length=50), nullable=False),
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('uuid', sa.String(length=50), nullable=False),
+    sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['created_by'], ['users.uuid'], ),
+    sa.ForeignKeyConstraint(['school_id'], ['schools.uuid'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name'),
+    sa.UniqueConstraint('uuid')
+    )
+    op.create_index(op.f('ix_subjects_created_at'), 'subjects', ['created_at'], unique=False)
+    op.create_index(op.f('ix_subjects_date'), 'subjects', ['date'], unique=False)
     op.create_table('localgovernments',
     sa.Column('name', sa.String(length=45), nullable=False),
     sa.Column('state_id', sa.String(length=45), nullable=False),
@@ -172,20 +204,31 @@ def upgrade() -> None:
     op.create_index(op.f('ix_localgovernments_date'), 'localgovernments', ['date'], unique=False)
     op.create_table('individuals',
     sa.Column('user_id', sa.String(length=45), nullable=False),
+    sa.Column('country_id', sa.String(length=45), nullable=True),
     sa.Column('state_id', sa.String(length=45), nullable=True),
     sa.Column('lga_id', sa.String(length=45), nullable=True),
+    sa.Column('school_id', sa.String(length=45), nullable=True),
+    sa.Column('subject_id', sa.String(length=45), nullable=True),
     sa.Column('address', sa.String(length=255), nullable=True),
     sa.Column('date_of_birth', sa.String(length=45), nullable=False),
     sa.Column('gender', sa.String(length=16), nullable=False),
     sa.Column('account_type', sa.String(length=100), nullable=False),
     sa.Column('photo', sa.String(length=255), nullable=True),
+    sa.Column('profession', sa.String(length=255), nullable=True),
+    sa.Column('qualification', sa.String(length=255), nullable=True),
+    sa.Column('institution', sa.String(length=255), nullable=True),
+    sa.Column('programme', sa.String(length=255), nullable=True),
+    sa.Column('skills', sa.String(length=255), nullable=True),
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('uuid', sa.String(length=50), nullable=False),
     sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['country_id'], ['countries.uuid'], ),
     sa.ForeignKeyConstraint(['lga_id'], ['localgovernments.uuid'], ),
+    sa.ForeignKeyConstraint(['school_id'], ['schools.uuid'], ),
     sa.ForeignKeyConstraint(['state_id'], ['states.uuid'], ),
+    sa.ForeignKeyConstraint(['subject_id'], ['subjects.uuid'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.uuid'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('uuid')
@@ -203,10 +246,16 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_localgovernments_date'), table_name='localgovernments')
     op.drop_index(op.f('ix_localgovernments_created_at'), table_name='localgovernments')
     op.drop_table('localgovernments')
+    op.drop_index(op.f('ix_subjects_date'), table_name='subjects')
+    op.drop_index(op.f('ix_subjects_created_at'), table_name='subjects')
+    op.drop_table('subjects')
     op.drop_index(op.f('ix_states_date'), table_name='states')
     op.drop_index(op.f('ix_states_created_at'), table_name='states')
     op.drop_table('states')
     op.drop_table('user_group')
+    op.drop_index(op.f('ix_schools_date'), table_name='schools')
+    op.drop_index(op.f('ix_schools_created_at'), table_name='schools')
+    op.drop_table('schools')
     op.drop_table('role_group')
     op.drop_table('permission_role')
     op.drop_index(op.f('ix_countries_date'), table_name='countries')
