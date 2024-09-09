@@ -9,8 +9,7 @@
 from typing import Any
 from sqlalchemy import (
     Column,
-    String,
-    ForeignKey, Table,
+    ForeignKey, Table, String
 )
 
 from app.mixins.columns import BaseMixin, BaseModelMixin
@@ -19,7 +18,8 @@ from sqlalchemy.orm import relationship
 
 # Many to many associations
 # subject_class = Table(
-#     Column('subjects_id')
+#     Column('subjects_id', String(length=50), ForeignKey('subjects.uuid')),
+#     Column('class_id', String(length=50), ForeignKey('classes.uuid')),
 # )
 
 
