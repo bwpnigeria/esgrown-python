@@ -70,6 +70,7 @@ class Corporate(BaseMixin, Base):
     lga_id = Column(String(45), ForeignKey("localgovernments.uuid"), nullable=True)
 
     name = Column(String(255), nullable=False)
+    address = Column(String(255), nullable=True)
     account_type = Column(String(100), nullable=False)
     delivery_level = Column(String(255), nullable=True)
     secondary_contacts = Column(String(255), nullable=True)

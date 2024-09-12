@@ -8,16 +8,14 @@
 
 from app.mixins.schemas import (
     BaseModelIn,
-    BaseModelCreate,
     BaseModelFilter,
     BaseModelMin,
     BaseModelSearch,
-    BaseModelOut,
     JoinSearch,
-    BaseUACSchemaMixin
+    BaseUACSchemaMixin, BaseModelCreate
 )
 from app.user.schemas import UserAccountIn, UserSchema, UserUpdate, UserUpdateSelf
-from app.utils.custom_validators import CapStr, UpStr, LowStr
+from app.utils.custom_validators import LowStr
 from app.mixins.commons import ListBase, UserMin
 from app.lga.schemas import LocalGovernmentMin, StateMin, CountryMin
 from app.utils.enums import Gender, AccounType, CooporateType
@@ -80,14 +78,9 @@ class ClassList(ListBase):
 
 
 class IndividualIn(BaseModelIn):
-    date_of_birth: UpStr 
-    gender: Gender 
-    account_type: AccounType 
-    address: UpStr | None = None
-    country_id: str | None = None
-    state_id: str | None = None
-    lga_id: str | None = None
-    photo: str | None = None
+    date_of_birth: str
+    gender: Gender
+    account_type: AccounType
 
     user: UserAccountIn
 
@@ -95,17 +88,21 @@ class IndividualIn(BaseModelIn):
 class IndividualCreate(BaseModel):
     user_id: str
     gender: Gender
-    address: UpStr
+    address: str
     account_type: AccounType
-    date_of_birth: UpStr
+    date_of_birth: str
     photo: str | None = None
+
+    country_id: str | None = None
+    state_id: str | None = None
+    lga_id: str | None = None
 
     user: UserSchema
 
 
 class IndividualUpdate(BaseModelIn):
-    address: UpStr | None = None
-    date_of_birth: UpStr | None = None
+    address: str | None = None
+    date_of_birth: str | None = None
     gender: Gender | None = None
     account_type: AccounType | None = None
     photo: str | None = None
@@ -126,8 +123,8 @@ class IndividualUpdate(BaseModelIn):
 
 
 class IndividualUpdateSelf(BaseModelIn):
-    address: UpStr | None = None
-    date_of_birth: UpStr | None = None
+    address: str | None = None
+    date_of_birth: str | None = None
     gender: Gender | None = None
     account_type: AccounType | None = None
     photo: str | None = None
@@ -148,8 +145,8 @@ class IndividualUpdateSelf(BaseModelIn):
 
 
 class IndividualFilter(BaseModelFilter):
-    address: UpStr | None = None
-    date_of_birth: UpStr | None = None
+    address: str | None = None
+    date_of_birth: str | None = None
     gender: Gender | None = None
     account_type: AccounType | None = None
     photo: str | None = None
@@ -184,8 +181,8 @@ class IndividualSearch(BaseModelSearch):
 
 
 class IndividualOut(BaseModelMin):
-    address: UpStr 
-    date_of_birth: UpStr 
+    address: str
+    date_of_birth: str
     gender: Gender 
     photo: str | None = None
     account_type: str
@@ -213,14 +210,46 @@ class IndividualList(ListBase):
 # ====================[ Corporate ]====================
 
 
-# class CoporateIn(BaseModelIn):
-#     date_of_birth: UpStr
-#     gender: Gender
-#     account_type: AccounType
-#     address: UpStr | None = None
-#     country_id: str | None = None
-#     state_id: str | None = None
-#     lga_id: str | None = None
-#     photo: str | None = None
-#
-#     user: UserAccountIn
+class CorporateIn(BaseModelIn):
+    name: str
+    account_type: CooporateType
+    delivery_level: str | None = None
+    secondary_contacts: str | None = None
+    head: str | None = None
+    head_contact: str | None = None
+
+    country_id: str | None = None
+    state_id: str | None = None
+    lga_id: str | None = None
+    photo: str | None = None
+
+    user: UserAccountIn
+
+
+class CorporateCreate(BaseModel):
+    name: str
+    account_type: CooporateType
+
+    user: UserSchema
+
+
+class CorporateUpdate(BaseModelIn):
+    address: str | None = None
+    date_of_birth: str | None = None
+    gender: Gender | None = None
+    account_type: AccounType | None = None
+    photo: str | None = None
+    profession: str | None = None
+    qualification: str | None = None
+    institution: str | None = None
+    programme: str | None = None
+    skills: str | None = None
+    school: str | None = None
+    classroom: str | None = None
+    subject: str | None = None
+
+    country_id: str | None = None
+    state_id: str | None = None
+    lga_id: str | None = None
+
+    user: UserUpdate | None = Field(None, exclude=True)
