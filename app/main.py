@@ -16,7 +16,6 @@ from app.lga import router as lga_router
 # from app.dashboard import router as dashboard_router
 
 from app.profile import router as individual_router
-
 app = FastAPI(
     title="Esgrown"
 )
@@ -59,7 +58,8 @@ app.include_router(lga_router.lga_router)
 
 # Profile
 app.include_router(individual_router.individual_router)
-
+app.include_router(individual_router.class_router)
+app.include_router(individual_router.subject_router)
 
 # Helper
 # app.include_router(alumni_router.helper_router)

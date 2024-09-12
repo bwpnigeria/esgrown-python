@@ -11,18 +11,26 @@ from typing import Any
 from fastapi import APIRouter, Body, Depends, File, UploadFile
 from app.user.schemas import UserSchema
 
-from app.profile import schemas, cruds
+from app.profile import schemas, cruds, models
 from app.utils.crud_util import CrudUtil
 from app.dependencies.dependencies import (
     HasPermission,
     get_current_user,
-    get_super_user,
 )
-from app.utils.custom_validators import UpStr
 
 individual_router = APIRouter(
     prefix="/individual",
     tags=["Individual Routes"],
+)
+
+subject_router = APIRouter(
+    prefix="/subject",
+    tags=["Subject Routes"],
+)
+
+class_router = APIRouter(
+    prefix="/class",
+    tags=["Class Routes"],
 )
 
 
@@ -125,3 +133,154 @@ async def delete_profile(
     uuid: str,
 ) -> dict[str, Any]:
     return cruds.delete_profile(cu, uuid)
+
+
+# ================ Subject ================
+
+
+@subject_router.post(
+    "",
+    dependencies=[Depends(HasPermission(["subject:create"]))],
+)
+async def create_subject(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    subject_data: schemas.SubjectCreate
+) -> schemas.SubjectSchema:
+    return cruds.create_subject(cu, subject_data)
+
+
+@subject_router.get(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["subject:read"]))],
+)
+def subject_detail(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> schemas.SubjectSchema:
+    return cruds.get_subject_by_uuid(cu, uuid)
+
+
+@subject_router.put(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["subject:update"]))],
+)
+def update_subject(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+    subject_data: schemas.SubjectUpdate,
+) -> schemas.SubjectSchema:
+    return cruds.update_subject(cu, uuid, subject_data)
+
+
+@subject_router.get(
+    "",
+    dependencies=[Depends(HasPermission(["subject:list"]))],
+)
+def subject_list(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    skip: int = 0,
+    limit: int = 100,
+) -> schemas.SubjectList:
+    return cruds.list_subject(cu, skip, limit)
+
+
+@subject_router.delete(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["subject:delete"]))],
+)
+def delete_subject(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> dict[str, Any]:
+    return cruds.delete_subject(cu, uuid)
+
+
+# ================ Classes ================
+
+@class_router.post(
+    "",
+    dependencies=[Depends(HasPermission(["class:create"]))],
+)
+def create_class(
+    class_data: schemas.ClassCreate,
+    cu: CrudUtil = Depends(CrudUtil),
+) -> schemas.ClassSchema:
+    return cruds.create_class(cu, class_data)
+
+
+@class_router.get(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["class:read"]))],
+)
+def class_detail(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> schemas.ClassSchema:
+    return cruds.get_class_by_uuid(cu, uuid)
+
+@class_router.get(
+    "",
+    dependencies=[Depends(HasPermission(["class:list"]))],
+)
+def class_list(
+    cu: CrudUtil = Depends(CrudUtil),
+    skip: int = 0,
+    limit: int = 100,
+) -> schemas.ClassList:
+    return cruds.list_class(cu, skip, limit)
+
+
+@class_router.put(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["class:update"]))],
+)
+def update_class(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+    update_data: schemas.ClassUpdate,
+) -> schemas.ClassSchema:
+    return cruds.update_class(cu, uuid, update_data)
+
+
+@class_router.delete(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["class:delete"]))],
+)
+def delete_class(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str
+) -> dict[str, Any]:
+    return cruds.delete_class(cu, uuid)
+
+
+@class_router.delete(
+    "/{uuid}/subjects",
+    dependencies=[Depends(HasPermission(["class:update"]))],
+)
+def remove_subject_from_class(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+    subj_to_delete: schemas.RemoveClassSubject,
+) -> schemas.ClassSchema:
+    db_class = cruds.get_class_by_uuid(cu, uuid)
+    subjects = subj_to_delete.model_dump()["subjects"]
+    for subj_uuid in subjects:
+        subj = cruds.get_subject_by_uuid(cu, uuid=subj_uuid)
+        if subj:
+            try:
+                db_class.subjects.remove(subj)
+            except ValueError:
+                pass
+
+    cu.db.commit()
+    cu.db.refresh(db_class)
+    return db_class
