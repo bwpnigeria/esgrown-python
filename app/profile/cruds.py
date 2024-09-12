@@ -162,7 +162,6 @@ def update_own_profile(
         {"user_id": user.uuid},
     )
 
-
     if profile.user:
         update_user(
             cu,
@@ -175,7 +174,7 @@ def update_own_profile(
     db_profile.date_of_birth = profile.date_of_birth or db_profile.date_of_birth  # type: ignore
     db_profile.gender = profile.gender or db_profile.gender  # type: ignore
     db_profile.photo = profile.photo or db_profile.photo # type: ignore
-    db_profile.profession = profile.profession or db_profile.profession # type: ignore
+    db_profile.profession = profile.profession or db_profile.profession or db_profile.account_type  # type: ignore
     db_profile.qualification = profile.qualification or db_profile.qualification # type: ignore
     db_profile.institution = profile.institution or db_profile.institution # type: ignore
     db_profile.programme = profile.programme or db_profile.programme # type: ignore
@@ -226,4 +225,133 @@ def delete_profile(
         cu,
         str(db_individual.user.uuid),
         autocommit=True
+    )
+
+# ====================[ Subject ]====================
+
+def create_subject(
+    cu: CrudUtil,
+    subject_data: schemas.SubjectCreate
+) -> models.Subject:
+    cu.ensure_unique_model(models.Subject, {"name": subject_data.name})
+    subject: models.Subject = cu.create_model(models.Subject, subject_data)
+    return subject
+
+
+def get_subject_by_uuid(
+    cu: CrudUtil,
+    uuid: str
+) -> models.Subject:
+    subject: models.Subject = cu.get_model_or_404(
+        models.Subject,
+        {"uuid": uuid}
+    )
+    return subject
+
+
+def update_subject(
+    cu: CrudUtil,
+    uuid: str,
+    update_data: schemas.SubjectUpdate,
+) -> models.Subject:
+    subject: models.Subject = cu.update_model(
+        model_to_update=models.Subject,
+        update=update_data,
+        update_conditions={"uuid": uuid}
+    )
+    return subject
+
+
+def list_subject(
+    cu: CrudUtil,
+    skip: int,
+    limit: int,
+) -> schemas.SubjectList:
+    subjects: dict[str, Any] = cu.list_model(
+        model_to_list=models.Subject,
+        skip=skip,
+        limit=limit
+    )
+    return schemas.SubjectList(**subjects)
+
+
+def delete_subject(
+    cu: CrudUtil,
+    uuid: str,
+) -> dict[str, Any]:
+    return cu.delete_model(
+        model_to_delete=models.Subject,
+        delete_conditions={"uuid": uuid}
+    )
+
+
+# ====================[ Class ]====================
+
+
+def create_class(
+    cu: CrudUtil,
+    class_data: schemas.ClassCreate
+) -> models.Class:
+    cu.ensure_unique_model(
+        model_to_check=models.Class,
+        unique_condition={"name": class_data.name}
+    )
+
+    new_class: models.Class = cu.create_model(
+        model_to_create=models.Class,
+        create=class_data
+    )
+
+    return new_class
+
+def get_class_by_uuid(
+    cu: CrudUtil,
+    uuid: str,
+) -> models.Class:
+
+    db_class: models.Class = cu.get_model_or_404(
+        model_to_get=models.Class,
+        model_conditions={"uuid": uuid}
+    )
+    return db_class
+
+
+def  update_class(
+    cu: CrudUtil,
+    uuid: str,
+    update_data: schemas.ClassUpdate,
+) -> models.Class:
+    db_class: models.Class = cu.update_model(
+        model_to_update=models.Class,
+        update=update_data,
+        update_conditions={"uuid": uuid},
+        autocommit=False if update_data.subjects else True,
+    )
+
+    if update_data.subjects:
+        for subject_uuid in update_data.subjects:
+            db_class.subjects.append(
+                get_subject_by_uuid(cu, uuid=subject_uuid)
+            )
+
+    cu.db.commit()
+    cu.db.refresh(db_class)
+
+    return db_class
+
+
+def list_class(cu: CrudUtil, skip: int, limit: int) -> schemas.ClassList:
+    roles: dict[str, Any] = cu.list_model(
+        model_to_list=models.Class,
+        skip=skip,
+        limit=limit
+    )
+
+    return schemas.ClassList(**roles)
+
+
+def delete_class(cu: CrudUtil, uuid: str) -> dict[str, Any]:
+    return cu.delete_model(
+        model_to_delete=models.Class,
+        delete_conditions={"uuid": uuid}
     )

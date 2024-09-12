@@ -14,13 +14,15 @@ from app.mixins.schemas import (
     BaseModelSearch,
     BaseModelOut,
     JoinSearch,
+    BaseUACSchemaMixin
 )
 from app.user.schemas import UserAccountIn, UserSchema, UserUpdate, UserUpdateSelf
-from app.utils.custom_validators import CapStr, UpStr
+from app.utils.custom_validators import CapStr, UpStr, LowStr
 from app.mixins.commons import ListBase, UserMin
 from app.lga.schemas import LocalGovernmentMin, StateMin, CountryMin
 from app.utils.enums import Gender, AccounType, CooporateType
 from app.user.models import User
+from typing import Optional, List
 
 from pydantic import (
     BaseModel,
@@ -29,104 +31,50 @@ from pydantic import (
     Field,
 )
 
-
-# ====================[ School ]====================
-
-class SchoolIn(BaseModelIn):
-    name: UpStr
-    account_type: CooporateType
-
-    user: UserAccountIn
-
-class SchoolCreate(BaseModelCreate):
-    name: UpStr
-    account_type: CooporateType
-
-    user: UserAccountIn
-
-
-class SchoolUpdate(BaseModelIn):
-    name: UpStr | None = None
-    account_type: CooporateType | None = None
-    user: UserUpdateSelf | None = Field(None, exclude=True)
-
-
-class SchoolFilter(BaseModelFilter):
-    name: UpStr | None = None
-    account_type: CooporateType | None = None
-
-
-class SchoolSearch(BaseModelSearch):
-    @computed_field
-    @property
-    def search_fields(self) -> list[str]:
-        return ["name", "account_type"]
-
-    @computed_field
-    @property
-    def join_search(self) -> list[JoinSearch]:
-        return [
-            JoinSearch(model=User, column="email", onkey="user_id"),
-        ]
-
-
-class SchoolOut(BaseModelOut):
-    name: UpStr
-    account_type: str
-
-    user: UserMin
-
-
-class SchoolList(ListBase):
-    items: list[SchoolOut]
-
-
 # ====================[ Subject ]====================
 
-class SubjectIn(BaseModelIn):
-    name: UpStr
-    school_id: str
+class SubjectCreate(BaseModel):
+    name: str
+    description: LowStr | None = None
 
 
-class SubjectCreate(BaseModelCreate):
-    name: UpStr
-    school_id: str
+class SubjectUpdate(BaseModel):
+    name: str | None = None
+    description: LowStr | None = None
 
 
-class SubjectUpdate(BaseModelIn):
-    name: UpStr | None = None
-    school_id: str | None = None
-
-
-class SubjectFilter(BaseModelFilter):
-    name: UpStr | None = None
-    school_id: str | None = None
-# o840kRvqDEMfFNxuz
-
-class SubjectSearch(BaseModelSearch):
-    @computed_field
-    @property
-    def search_fields(self) -> list[str]:
-        return ["name"]
-
-
-class SubjectOut(BaseModelOut):
-    name: UpStr
-    school_id: str
-
-    school: SchoolOut
-
-
-class SubjectMin(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    uuid: str
-    name: UpStr
-    school_id: str
+class SubjectSchema(BaseUACSchemaMixin):
+    pass
 
 
 class SubjectList(ListBase):
-    items: list[SubjectMin]
+    items: list[SubjectSchema]
 
+
+# ====================[ Classes ]====================
+
+
+class ClassCreate(BaseModel):
+    name: str
+    description: LowStr | None = None
+
+
+class ClassUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    subjects: list[str] | None = None
+
+
+class RemoveClassSubject(BaseModel):
+    subjects: list[str]
+
+
+class ClassSchema(BaseUACSchemaMixin):
+    subjects: list[SubjectSchema]
+
+
+class ClassList(ListBase):
+    items: list[ClassSchema]
 
 # ====================[ Individual ]====================
 
@@ -166,15 +114,14 @@ class IndividualUpdate(BaseModelIn):
     institution: str | None = None
     programme: str | None = None
     skills: str | None = None
+    school: str | None = None
+    classroom: str | None = None
+    subject: str | None = None
 
     country_id: str | None = None
     state_id: str | None = None
     lga_id: str | None = None
-    school_id: str | None = None
-    subject_id: str | None = None
 
-    school: SchoolUpdate | None = Field(None, exclude=True)
-    subject: SubjectUpdate | None = Field(None, exclude=True)
     user: UserUpdate | None = Field(None, exclude=True)
 
 
@@ -189,15 +136,14 @@ class IndividualUpdateSelf(BaseModelIn):
     institution: str | None = None
     programme: str | None = None
     skills: str | None = None
+    school: str | None = None
+    classroom: str | None = None
+    subject: str | None = None
 
     country_id: str | None = None
     state_id: str | None = None
     lga_id: str | None = None
-    school_id: str | None = None
-    subject_id: str | None = None
 
-    school: SchoolUpdate | None = Field(None, exclude=True)
-    subject: SubjectUpdate | None = Field(None, exclude=True)
     user: UserUpdateSelf | None = Field(None, exclude=True)
 
 
@@ -212,6 +158,9 @@ class IndividualFilter(BaseModelFilter):
     institution: str | None = None
     programme: str | None = None
     skills: str | None = None
+    school: str | None = None
+    classroom: str | None = None
+    subject: str | None = None
 
     country_id: str | None = None
     state_id: str | None = None
@@ -245,6 +194,9 @@ class IndividualOut(BaseModelMin):
     institution: str | None = None
     programme: str | None = None
     skills: str | None = None
+    school: str | None = None
+    classroom: str | None = None
+    subject: str | None = None
 
 
     country: CountryMin | None = None
@@ -256,3 +208,19 @@ class IndividualOut(BaseModelMin):
 
 class IndividualList(ListBase):
     items: list[IndividualOut]
+
+
+# ====================[ Corporate ]====================
+
+
+# class CoporateIn(BaseModelIn):
+#     date_of_birth: UpStr
+#     gender: Gender
+#     account_type: AccounType
+#     address: UpStr | None = None
+#     country_id: str | None = None
+#     state_id: str | None = None
+#     lga_id: str | None = None
+#     photo: str | None = None
+#
+#     user: UserAccountIn
