@@ -58,6 +58,7 @@ app.include_router(lga_router.lga_router)
 
 # Profile
 app.include_router(individual_router.individual_router)
+app.include_router(individual_router.corporate_router)
 app.include_router(individual_router.class_router)
 app.include_router(individual_router.subject_router)
 

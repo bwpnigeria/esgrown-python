@@ -76,11 +76,16 @@ class ClassList(ListBase):
 
 # ====================[ Individual ]====================
 
-
 class IndividualIn(BaseModelIn):
     date_of_birth: str
     gender: Gender
     account_type: AccounType
+    address: str | None = None
+    photo: str | None = None
+
+    country_id: str | None = None
+    state_id: str | None = None
+    lga_id: str | None = None
 
     user: UserAccountIn
 
@@ -92,10 +97,6 @@ class IndividualCreate(BaseModel):
     account_type: AccounType
     date_of_birth: str
     photo: str | None = None
-
-    country_id: str | None = None
-    state_id: str | None = None
-    lga_id: str | None = None
 
     user: UserSchema
 
@@ -168,7 +169,7 @@ class IndividualSearch(BaseModelSearch):
     @computed_field
     @property
     def search_fields(self) -> list[str]:
-        return ["gender", "address", "date_of_birth", "account_type"]
+        return ["gender", "address", "date_of_birth", "account_type", "profession", "qualification", "institution", "programme", "skills"]
 
     @computed_field
     @property
@@ -181,8 +182,8 @@ class IndividualSearch(BaseModelSearch):
 
 
 class IndividualOut(BaseModelMin):
-    address: str
-    date_of_birth: str
+    address: str | None = None
+    date_of_birth: str | None = None
     gender: Gender 
     photo: str | None = None
     account_type: str
@@ -212,6 +213,7 @@ class IndividualList(ListBase):
 
 class CorporateIn(BaseModelIn):
     name: str
+    address: str | None = None
     account_type: CooporateType
     delivery_level: str | None = None
     secondary_contacts: str | None = None
@@ -227,29 +229,103 @@ class CorporateIn(BaseModelIn):
 
 
 class CorporateCreate(BaseModel):
+    user_id: str
     name: str
     account_type: CooporateType
+    address: str | None = None
+    delivery_level: str | None = None
+    secondary_contacts: str | None = None
+    head: str | None = None
+    head_contact: str | None = None
 
     user: UserSchema
 
 
 class CorporateUpdate(BaseModelIn):
+    name: str | None = None
     address: str | None = None
-    date_of_birth: str | None = None
-    gender: Gender | None = None
-    account_type: AccounType | None = None
-    photo: str | None = None
-    profession: str | None = None
-    qualification: str | None = None
-    institution: str | None = None
-    programme: str | None = None
-    skills: str | None = None
-    school: str | None = None
-    classroom: str | None = None
-    subject: str | None = None
+    account_type: CooporateType | None = None
+    delivery_level: str | None = None
+    secondary_contacts: str | None = None
+    head: str | None = None
+    head_contact: str | None = None
 
     country_id: str | None = None
     state_id: str | None = None
     lga_id: str | None = None
 
+    employees: list[str] | None = None
+    classes: list[str] | None = None
+
     user: UserUpdate | None = Field(None, exclude=True)
+
+
+class CorporateUpdateSelf(BaseModelIn):
+    name: str | None = None
+    address: str | None = None
+    account_type: CooporateType | None = None
+    delivery_level: str | None = None
+    secondary_contacts: str | None = None
+    head: str | None = None
+    head_contact: str | None = None
+
+    country_id: str | None = None
+    state_id: str | None = None
+    lga_id: str | None = None
+
+    employees: list[str] | None = None
+    classes: list[str] | None = None
+
+    user: UserUpdateSelf | None = Field(None, exclude=True)
+
+
+class CorporateFilter(BaseModelFilter):
+    name: str | None = None
+    address: str | None = None
+    account_type: CooporateType | None = None
+    delivery_level: str | None = None
+    secondary_contacts: str | None = None
+    head: str | None = None
+    head_contact: str | None = None
+
+    country_id: str | None = None
+    state_id: str | None = None
+    lga_id: str | None = None
+
+
+class CorporateSearch(BaseModelSearch):
+    @computed_field
+    @property
+    def search_fields(self) -> list[str]:
+        return ["name", "address", "delivery_level", "secondary_contacts", "head", "head_contact", "account_type"]
+
+    @computed_field
+    @property
+    def join_search(self) -> list[JoinSearch]:
+        return [
+            JoinSearch(model=User, column="firstname", onkey="user_id"),
+            JoinSearch(model=User, column="lastname", onkey="user_id"),
+            JoinSearch(model=User, column="email", onkey="user_id"),
+        ]
+
+
+class CorporateOut(BaseModelMin):
+    name: str
+    address: str | None = None
+    account_type: str
+    delivery_level: str | None = None
+    secondary_contacts: str | None = None
+    head: str | None = None
+    head_contact: str | None = None
+
+    employees: list[IndividualOut] | None = None
+    classes: list[ClassSchema] | None = None
+    country: CountryMin | None = None
+    state: StateMin | None = None
+    lga: LocalGovernmentMin | None = None
+
+    user: UserMin
+
+
+class CorporateList(ListBase):
+    items: list[CorporateOut]

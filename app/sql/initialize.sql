@@ -1,1 +1,1 @@
-CREATE DATABASE IF NOT EXISTS `mamu_test_db`;
+CREATE DATABASE IF NOT EXISTS `esgrown_test_db`;

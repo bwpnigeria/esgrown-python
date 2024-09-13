@@ -23,6 +23,8 @@ from app.utils.image_qr import (
     upload_image_file_to_cloud,
 )
 
+# ====================[ Private ]====================
+
 def create_profile(
     cu: CrudUtil,
     individual: schemas.IndividualIn,
@@ -82,7 +84,7 @@ def get_profile(
     cu: CrudUtil,
     uuid: str,
 ) -> schemas.IndividualOut | models.Individual:
-    # get the individual
+    # get the individual from database
     db_individual: models.Individual = cu.get_model_or_404(
         models.Individual,
         {"uuid": uuid},
@@ -170,15 +172,11 @@ def update_own_profile(
             autocommit=False,
         )
 
-    db_profile.address = profile.address or db_profile.address  # type: ignore
-    db_profile.date_of_birth = profile.date_of_birth or db_profile.date_of_birth  # type: ignore
-    db_profile.gender = profile.gender or db_profile.gender  # type: ignore
-    db_profile.photo = profile.photo or db_profile.photo # type: ignore
-    db_profile.profession = profile.profession or db_profile.profession or db_profile.account_type  # type: ignore
-    db_profile.qualification = profile.qualification or db_profile.qualification # type: ignore
-    db_profile.institution = profile.institution or db_profile.institution # type: ignore
-    db_profile.programme = profile.programme or db_profile.programme # type: ignore
-    db_profile.skills = profile.skills or db_profile.skills # type: ignore
+    db_profile: models.Individual = cu.update_model(
+        models.Individual,
+        profile,
+        {"uuid": db_profile.uuid},
+    )
 
     cu.db.commit()
     cu.db.refresh(db_profile)
@@ -199,6 +197,7 @@ def search_profile(
         limit=search.limit,
         order=search.order,
     )
+
 
 def delete_profile(
     cu: CrudUtil,
@@ -227,6 +226,176 @@ def delete_profile(
         autocommit=True
     )
 
+
+# ====================[ Corporate ]====================
+
+def create_corporate(
+    cu: CrudUtil,
+    corporate: schemas.CorporateIn,
+) -> schemas.CorporateOut | models.Corporate:
+    user = create_user_account(
+        cu,
+        user_data=corporate.user,
+        autocommit=False,
+        can_login=True,
+    )
+
+    try:
+        user.groups.append(get_group_by_name(cu, "corporate_user_group"))
+    except Exception:
+        cu.db.rollback()
+        raise HTTPException(
+            status_code=403,
+            detail="User group not found, it should be created",
+        )
+
+    # Create the individual model
+    db_corporate: models.Corporate = cu.create_model(
+        models.Corporate,
+        schemas.CorporateCreate(
+            user_id=str(user.uuid),
+            user=user,
+            **corporate.model_dump(exclude={"user"}),
+        ),
+    )
+
+    return db_corporate
+
+
+def get_corporate(
+    cu: CrudUtil,
+    uuid: str,
+) -> schemas.CorporateOut | models.Corporate:
+    # get the individual from database
+    db_corporate: models.Corporate = cu.get_model_or_404(
+        models.Corporate,
+        {"uuid": uuid},
+    )
+
+    return db_corporate
+
+
+def get_all_corporate(
+    cu: CrudUtil,
+    filter: schemas.CorporateFilter,
+) -> Any:
+    return cu.list_model(
+        models.Corporate,
+        filter.model_dump(exclude_unset=True),
+    )
+
+
+def get_own_corporate(
+    cu: CrudUtil,
+    user: UserSchema,
+) -> schemas.CorporateOut | models.Corporate:
+    # get the corporate from database
+    db_corporate: models.Corporate = cu.get_model_or_404(
+        models.Corporate,
+        {"user_id": user.uuid},
+    )
+
+    return db_corporate
+
+
+def update_corporate(
+    cu: CrudUtil,
+    uuid: str,
+    corporate: schemas.CorporateUpdate,
+) -> schemas.CorporateOut | models.Corporate:
+    db_corporate: models.Corporate = cu.get_model_or_404(
+        models.Corporate,
+        {"uuid": uuid},
+    )
+
+    if corporate.user:
+        update_user(
+            cu,
+            str(db_corporate.user.uuid),
+            corporate.user,
+            autocommit=False,
+        )
+
+    db_corporate: models.Corporate = cu.update_model(
+        models.Corporate,
+        corporate,
+        {"uuid": uuid},
+    )
+
+    return db_corporate
+
+
+def update_own_corporate(
+    cu: CrudUtil,
+    corporate: schemas.CorporateUpdateSelf,
+    user: UserSchema,
+) -> schemas.CorporateOut | models.Corporate:
+    db_corporate: models.Corporate = cu.get_model_or_404(
+        models.Corporate,
+        {"user_id": user.uuid},
+    )
+
+    if corporate.user:
+        update_user(
+            cu,
+            str(db_corporate.user.uuid),
+            corporate.user,
+            autocommit=False,
+        )
+
+    db_corporate: models.Corporate = cu.update_model(
+        models.Corporate,
+        corporate,
+        {"uuid": db_corporate.uuid},
+    )
+
+    cu.db.commit()
+    cu.db.refresh(db_corporate)
+
+    return db_corporate
+
+
+def delete_corporate(
+    cu: CrudUtil,
+    uuid: str,
+) -> dict[str, Any]:
+
+    db_corporate: models.Corporate = cu.get_model_or_404(
+        models.Corporate,
+        {"uuid": uuid},
+    )
+
+    try:
+        db_corporate.user.groups.remove(get_group_by_name(cu, "corporate_user_group"))
+    except ValueError:
+        pass
+
+    # now delete the profile
+    cu.delete_model(
+        models.Corporate,
+        {"uuid": uuid},
+    )
+
+    return delete_user(
+        cu,
+        str(db_corporate.user.uuid),
+        autocommit=True
+    )
+
+
+def search_corporate(
+    cu: CrudUtil,
+    search: schemas.CorporateSearch,
+) -> Any:
+    return cu.search_model(
+        models.Corporate,
+        search.search,
+        search.search_fields,
+        join_search=search.join_search,
+        skip=search.skip,
+        limit=search.limit,
+        order=search.order,
+    )
 # ====================[ Subject ]====================
 
 def create_subject(

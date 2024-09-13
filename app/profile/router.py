@@ -23,6 +23,11 @@ individual_router = APIRouter(
     tags=["Individual Routes"],
 )
 
+corporate_router = APIRouter(
+    prefix="/corporate",
+    tags=["Corporate Routes"],
+)
+
 subject_router = APIRouter(
     prefix="/subject",
     tags=["Subject Routes"],
@@ -49,7 +54,7 @@ async def create_profile(
 
 @individual_router.get(
     "",
-    dependencies=[Depends(HasPermission(["individual:list"]))],
+    dependencies=[Depends(HasPermission(["admin:list_individual"]))],
     response_model=schemas.IndividualList,
 )
 async def list_individuals(
@@ -62,7 +67,7 @@ async def list_individuals(
 
 @individual_router.get(
     "/{uuid}",
-    dependencies=[Depends(HasPermission(["individual:read"]))],
+    dependencies=[Depends(HasPermission(["admin:read_individual"]))],
 )
 async def get_profile(
     *,
@@ -86,7 +91,7 @@ async def get_own_profile(
 
 @individual_router.put(
     "/{uuid}",
-    dependencies=[Depends(HasPermission(["individual:update"]))],
+    dependencies=[Depends(HasPermission(["admin:update_individual"]))],
 )
 async def update_profile(
     *,
@@ -112,7 +117,7 @@ async def update_own_profile(
 
 @individual_router.get(
     "/search/all/profile",
-    dependencies=[Depends(HasPermission(["individual:search"]))],
+    dependencies=[Depends(HasPermission(["admin:search_individual"]))],
     response_model=schemas.IndividualList,
 )
 async def search_profile(
@@ -125,7 +130,7 @@ async def search_profile(
 
 @individual_router.delete(
     "/{uuid}",
-    dependencies=[Depends(HasPermission(["individual:delete"]))],
+    dependencies=[Depends(HasPermission(["admin:delete_individual"]))],
 )
 async def delete_profile(
     *,
@@ -135,8 +140,107 @@ async def delete_profile(
     return cruds.delete_profile(cu, uuid)
 
 
-# ================ Subject ================
+# ================ Corporate ================
+@corporate_router.post(
+    "",
+)
+async def create_corporate(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    corporate: schemas.CorporateIn,
+) -> schemas.CorporateOut:
+    return cruds.create_corporate(cu, corporate)
 
+
+@corporate_router.get(
+    "",
+    dependencies=[Depends(HasPermission(["admin:list_corporate"]))],
+    response_model=schemas.CorporateList,
+)
+async def list_corporates(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    filter: schemas.CorporateFilter = Depends(),
+) -> Any:
+    return cruds.get_all_corporate(cu, filter)
+
+
+@corporate_router.get(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["admin:read_corporate"]))],
+)
+async def get_corporate(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> schemas.CorporateOut:
+    return cruds.get_corporate(cu, uuid)
+
+
+@corporate_router.get(
+    "/own/corporate",
+    dependencies=[Depends(HasPermission(["corporate:read_corporate_own_profile"]))],
+)
+async def get_own_corporate(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    user: UserSchema = Depends(get_current_user),
+) -> schemas.CorporateOut:
+    return cruds.get_own_corporate(cu, user)
+
+
+@corporate_router.put(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["admin:update_corporate"]))],
+)
+async def update_corporate(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+    corporate: schemas.CorporateUpdate,
+) -> schemas.CorporateOut:
+    return cruds.update_corporate(cu, uuid, corporate)
+
+
+@corporate_router.put(
+    "/own/corporate",
+    dependencies=[Depends(HasPermission(["corporate:update_own_corporate"]))],
+)
+async def update_own_corporate(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    user: UserSchema = Depends(get_current_user),
+    corporate: schemas.CorporateUpdateSelf,
+) -> schemas.CorporateOut:
+    return cruds.update_own_corporate(cu, corporate, user)
+
+
+@corporate_router.delete(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["admin:delete_corporate"]))],
+)
+async def delete_corporate(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> dict[str, Any]:
+    return cruds.delete_corporate(cu, uuid)
+
+
+@corporate_router.get(
+    "/search/all/corporate",
+    dependencies=[Depends(HasPermission(["admin:search_corporate"]))],
+    response_model=schemas.CorporateList,
+)
+async def search_corporate(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    search: schemas.CorporateSearch = Depends(),
+) -> Any:
+    return cruds.search_corporate(cu, search)
+
+
+# ================ Subject ================
 
 @subject_router.post(
     "",

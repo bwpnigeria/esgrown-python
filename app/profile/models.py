@@ -31,8 +31,8 @@ class_corporate = Table(
 
 individual_corporate = Table(
     'individual_corporate', Base.metadata,
-    Column('individual_id', String(length=50), ForeignKey('individuals.uuid')),
-    Column('corporate_id', String(length=50), ForeignKey('corporates.uuid')),
+    Column('individual_id', String(length=50), ForeignKey('individuals.uuid'), nullable=True),
+    Column('corporate_id', String(length=50), ForeignKey('corporates.uuid'), nullable=True),
 )
 
 
@@ -43,7 +43,7 @@ class Individual(BaseMixin, Base):
     lga_id = Column(String(45), ForeignKey("localgovernments.uuid"), nullable=True)
 
     address = Column(String(255), nullable=True)
-    date_of_birth = Column(String(45), nullable=False)
+    date_of_birth = Column(String(45), nullable=True)
     gender = Column(String(16), nullable=False)
     account_type = Column(String(100), nullable=False)
     photo = Column(String(255), nullable=True)
@@ -75,7 +75,7 @@ class Corporate(BaseMixin, Base):
     delivery_level = Column(String(255), nullable=True)
     secondary_contacts = Column(String(255), nullable=True)
     head = Column(String(255), nullable=True)
-    head_contact = Column(String(255), nullable=True, unique=True)
+    head_contact = Column(String(255), nullable=True)
 
     employees: Any = relationship("Individual", secondary=individual_corporate, back_populates='employers', uselist=True)
     classes: Any = relationship('Class', secondary=class_corporate, uselist=True)
