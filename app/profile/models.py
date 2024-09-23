@@ -52,9 +52,9 @@ class Individual(BaseMixin, Base):
     qualification = Column(String(255), nullable=True)
     programme = Column(String(255), nullable=True)
     skills = Column(String(255), nullable=True)
-    school = Column(String(255), nullable=True)
-    classroom = Column(String(255), nullable=True)
-    subject = Column(String(255), nullable=True)
+    # school = Column(String(255), nullable=True)
+    # classroom = Column(String(255), nullable=True)
+    # subject = Column(String(255), nullable=True)
 
     user: Any = relationship("User", lazy="joined", foreign_keys=[user_id])
     country: Any = relationship("Country", lazy="joined", foreign_keys=[country_id])

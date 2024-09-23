@@ -151,6 +151,15 @@ def update_profile(
         {"uuid": uuid},
     )
 
+    if individual.employers:
+        for employer in individual.employers:
+            db_individual.employers.append(
+                get_corporate(cu, uuid=employer)
+            )
+
+    cu.db.commit()
+    cu.db.refresh(db_individual)
+
     return db_individual
 
 
@@ -177,6 +186,12 @@ def update_own_profile(
         profile,
         {"uuid": db_profile.uuid},
     )
+
+    if profile.employers:
+        for employer in profile.employers:
+            db_profile.employers.append(
+                get_corporate(cu, uuid=employer)
+            )
 
     cu.db.commit()
     cu.db.refresh(db_profile)
@@ -316,6 +331,18 @@ def update_corporate(
             autocommit=False,
         )
 
+    if corporate.classes:
+        for classroom in corporate.classes:
+            db_corporate.classes.append(
+                get_class_by_uuid(cu, uuid=classroom)
+            )
+
+    if corporate.employees:
+        for employee in corporate.employees:
+            db_corporate.employees.append(
+                get_corporate(cu, uuid=employee)
+            )
+
     db_corporate: models.Corporate = cu.update_model(
         models.Corporate,
         corporate,
@@ -342,6 +369,18 @@ def update_own_corporate(
             corporate.user,
             autocommit=False,
         )
+
+    if corporate.classes:
+        for classroom in corporate.classes:
+            db_corporate.classes.append(
+                get_class_by_uuid(cu, uuid=classroom)
+            )
+
+    if corporate.employees:
+        for employee in corporate.employees:
+            db_corporate.employees.append(
+                get_profile(cu, uuid=employee)
+            )
 
     db_corporate: models.Corporate = cu.update_model(
         models.Corporate,

@@ -74,6 +74,17 @@ class ClassSchema(BaseUACSchemaMixin):
 class ClassList(ListBase):
     items: list[ClassSchema]
 
+
+# ====================[ Min ]====================
+
+class CorporateMin(BaseModelMin):
+    name: str
+    address: str | None = None
+    account_type: str
+
+    classes: list[ClassSchema] | None = None
+
+
 # ====================[ Individual ]====================
 
 class IndividualIn(BaseModelIn):
@@ -112,9 +123,7 @@ class IndividualUpdate(BaseModelIn):
     institution: str | None = None
     programme: str | None = None
     skills: str | None = None
-    school: str | None = None
-    classroom: str | None = None
-    subject: str | None = None
+    employers: list[str] | None = None
 
     country_id: str | None = None
     state_id: str | None = None
@@ -134,9 +143,10 @@ class IndividualUpdateSelf(BaseModelIn):
     institution: str | None = None
     programme: str | None = None
     skills: str | None = None
-    school: str | None = None
-    classroom: str | None = None
-    subject: str | None = None
+    employers: list[str] | None = None
+    # school: str | None = None
+    # classroom: str | None = None
+    # subject: str | None = None
 
     country_id: str | None = None
     state_id: str | None = None
@@ -156,9 +166,9 @@ class IndividualFilter(BaseModelFilter):
     institution: str | None = None
     programme: str | None = None
     skills: str | None = None
-    school: str | None = None
-    classroom: str | None = None
-    subject: str | None = None
+    # school: str | None = None
+    # classroom: str | None = None
+    # subject: str | None = None
 
     country_id: str | None = None
     state_id: str | None = None
@@ -195,6 +205,27 @@ class IndividualOut(BaseModelMin):
     school: str | None = None
     classroom: str | None = None
     subject: str | None = None
+
+
+    country: CountryMin | None = None
+    state: StateMin | None = None
+    lga: LocalGovernmentMin | None = None
+    employers: list[CorporateMin] | None = None
+
+    user: UserMin
+
+
+class IndividualMin(BaseModelMin):
+    address: str | None = None
+    date_of_birth: str | None = None
+    gender: Gender
+    photo: str | None = None
+    account_type: str
+    profession: str | None = None
+    qualification: str | None = None
+    institution: str | None = None
+    programme: str | None = None
+    skills: str | None = None
 
 
     country: CountryMin | None = None
@@ -318,7 +349,7 @@ class CorporateOut(BaseModelMin):
     head: str | None = None
     head_contact: str | None = None
 
-    employees: list[IndividualOut] | None = None
+    employees: list[IndividualMin] | None = None
     classes: list[ClassSchema] | None = None
     country: CountryMin | None = None
     state: StateMin | None = None
