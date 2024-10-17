@@ -5,29 +5,30 @@
 # @Author  : Nasir Lawal (nasirlawal001@gmail.com)
 # @Link    : link
 # @Version : 1.0.0
-
+from typing import AnyStr, Any
+from datetime import date
 from app.mixins.schemas import (
     BaseModelIn,
     BaseModelFilter,
     BaseModelMin,
     BaseModelSearch,
     JoinSearch,
-    BaseUACSchemaMixin, BaseModelCreate
+    BaseUACSchemaMixin
 )
 from app.user.schemas import UserAccountIn, UserSchema, UserUpdate, UserUpdateSelf
 from app.utils.custom_validators import LowStr
 from app.mixins.commons import ListBase, UserMin
 from app.lga.schemas import LocalGovernmentMin, StateMin, CountryMin
-from app.utils.enums import Gender, AccounType, CooporateType
+from app.utils.enums import Gender, AccounType, CooporateType, SubscriptionType, SubscriptionMode, SubscriptionTarget, SubscriptionPlan
 from app.user.models import User
-from typing import Optional, List
 
 from pydantic import (
     BaseModel,
-    ConfigDict,
     computed_field,
     Field,
 )
+
+from decimal import Decimal
 
 # ====================[ Subject ]====================
 
@@ -47,6 +48,26 @@ class SubjectSchema(BaseUACSchemaMixin):
 
 class SubjectList(ListBase):
     items: list[SubjectSchema]
+
+
+# ====================[ Framework ]====================
+
+class FrameworkCreate(BaseModel):
+    name: str
+    description: LowStr | None = None
+
+
+class FrameworkUpdate(BaseModel):
+    name: str | None = None
+    description: LowStr | None = None
+
+
+class FrameworkSchema(BaseUACSchemaMixin):
+    pass
+
+
+class FrameworkList(ListBase):
+    items: list[FrameworkSchema]
 
 
 # ====================[ Classes ]====================
@@ -84,6 +105,35 @@ class CorporateMin(BaseModelMin):
 
     classes: list[ClassSchema] | None = None
 
+
+class SubscriptionOutMin(BaseModelMin):
+    audience: str
+    title: str
+    description: str
+    update_type: SubscriptionType
+    mode: SubscriptionMode
+    reference: str | None = None
+    levels: str | None = None
+    image_url: str | None = None
+    video_url: str | None = None
+    scheduled_date: Any | None = None
+    scheduled_time: Any | None = None
+    subscription_target: SubscriptionTarget | None = None
+
+
+class SubscriptionPlanMin(BaseModelMin):
+    name: str
+    duration: SubscriptionPlan
+    price: Decimal
+
+    subscription: SubscriptionOutMin | None = None
+
+
+class UserSubscriptionOutMin(BaseModelMin):
+    start_date: date | None = None
+    end_date: date | None = None
+
+    subscription_plan: SubscriptionPlanMin
 
 # ====================[ Individual ]====================
 
@@ -144,9 +194,6 @@ class IndividualUpdateSelf(BaseModelIn):
     programme: str | None = None
     skills: str | None = None
     employers: list[str] | None = None
-    # school: str | None = None
-    # classroom: str | None = None
-    # subject: str | None = None
 
     country_id: str | None = None
     state_id: str | None = None
@@ -166,9 +213,6 @@ class IndividualFilter(BaseModelFilter):
     institution: str | None = None
     programme: str | None = None
     skills: str | None = None
-    # school: str | None = None
-    # classroom: str | None = None
-    # subject: str | None = None
 
     country_id: str | None = None
     state_id: str | None = None
@@ -202,16 +246,13 @@ class IndividualOut(BaseModelMin):
     institution: str | None = None
     programme: str | None = None
     skills: str | None = None
-    school: str | None = None
-    classroom: str | None = None
-    subject: str | None = None
-
 
     country: CountryMin | None = None
     state: StateMin | None = None
     lga: LocalGovernmentMin | None = None
     employers: list[CorporateMin] | None = None
 
+    subscriptions: list[UserSubscriptionOutMin] | None = None
     user: UserMin
 
 
@@ -226,7 +267,6 @@ class IndividualMin(BaseModelMin):
     institution: str | None = None
     programme: str | None = None
     skills: str | None = None
-
 
     country: CountryMin | None = None
     state: StateMin | None = None
@@ -354,9 +394,169 @@ class CorporateOut(BaseModelMin):
     country: CountryMin | None = None
     state: StateMin | None = None
     lga: LocalGovernmentMin | None = None
-
+    
+    subscriptions: list[UserSubscriptionOutMin] | None = None
     user: UserMin
 
 
 class CorporateList(ListBase):
     items: list[CorporateOut]
+
+
+# ====================[ Subscription ]====================
+
+class SubscriptionIn(BaseModelIn):
+    audience: str
+    title: str
+    description: str
+    update_type: SubscriptionType
+    mode: SubscriptionMode
+    reference: str | None = None
+    levels: str | None = None
+    image_url: str | None = None
+    video_url: str | None = None
+    scheduled_date: str | None = None
+    scheduled_time: str | None = None
+    subscription_target: SubscriptionTarget | None = None
+    subject_id: str | None = None
+    framework_id: str | None = None
+
+
+class SubscriptionUpdate(BaseModelIn):
+    audience: str | None = None
+    title: str | None = None
+    description: str | None = None
+    update_type: SubscriptionType | None = None
+    mode: SubscriptionMode | None = None
+    reference: str | None = None
+    # skills: str | None = None
+    levels: str | None = None
+    image_url: str | None = None
+    video_url: str | None = None
+    scheduled_date: str | None = None
+    scheduled_time: str | None = None
+    subscription_target: SubscriptionTarget | None = None
+
+    subjects: str | None = None
+    framework: str | None = None
+
+
+class SubscriptionSearch(BaseModelSearch):
+    @computed_field
+    @property
+    def search_fields(self) -> list[str]:
+        return ["audience", "title", "description", "update_type", "mode", "reference"]
+
+
+class SubscriptionFilter(BaseModelFilter):
+    audience: str | None = None
+    update_type: SubscriptionType | None = None
+    mode: SubscriptionMode | None = None
+    scheduled_date: str | None = None
+    scheduled_time: str | None = None
+
+    subject_id: str | None = None
+    framework_id: str | None = None
+
+
+class SubscriptionOut(BaseModelMin):
+    audience: str
+    title: str
+    description: str
+    update_type: SubscriptionType
+    mode: SubscriptionMode
+    reference: str | None = None
+    levels: str | None = None
+    image_url: str | None = None
+    video_url: str | None = None
+    scheduled_date: Any | None = None
+    scheduled_time: Any | None = None
+    subscription_target: SubscriptionTarget | None = None
+
+    subjects: SubjectSchema | None = None
+    framework: FrameworkSchema | None = None
+    plans: list[SubscriptionPlanMin] | None = None
+
+
+class SubscriptionList(ListBase):
+    items: list[SubscriptionOut]
+
+
+# ====================[ Subscription Plan ]====================
+
+class SubscriptionPlanIn(BaseModelIn):
+    name: str
+    subscription_id: str
+    duration: SubscriptionPlan
+    price: Decimal | str
+
+
+class SubscriptionPlanOut(BaseModelMin):
+    name: str
+    duration: SubscriptionPlan
+    price: Decimal
+
+    subscription: SubscriptionOutMin
+
+
+class SubscriptionPlanUpdate(BaseModelIn):
+    name: str | None = None
+    duration: SubscriptionPlan | None = None
+    price: Decimal | None = None
+
+    subscription: str | None = None
+
+
+class SubscriptionPlanFilter(BaseModelFilter):
+    name: str | None = None
+    duration: SubscriptionPlan | None = None
+    price: Decimal | None = None
+
+    # subscription: str | None = None
+
+
+class SubscriptionPlanList(ListBase):
+    items: list[SubscriptionPlanOut]
+
+
+# ====================[ User Subscription ]====================
+class UserSubscriptionIn(BaseModelIn):
+    individual_id: str | None = None
+    corporate_id: str | None = None
+    subscription_plan_id: str
+    start_date: date
+    end_date: date
+
+
+class UserSubscriptionUpdate(BaseModelIn):
+    start_date: date | None = None
+    end_date: date | None = None
+
+    subscription_plan: str | None = None
+
+
+class UserSubscriptionSearch(BaseModelSearch):
+    @computed_field
+    @property
+    def search_fields(self) -> list[str]:
+        return ["start_date", "end_date", "subscription_plan"]
+  
+
+class UserSubscriptionFilter(BaseModelFilter):
+    start_date: date | None = None
+    end_date: date | None = None
+
+    subscription_plan_id: str | None = None
+
+
+class UserSubscriptionOut(BaseModelMin):
+    start_date: date | None = None
+    end_date: date | None = None
+
+    individual: IndividualMin | None = None 
+    corporate: CorporateMin | None = None 
+    subscription_plan: SubscriptionPlanMin
+
+
+class UserSubscriptionList(ListBase):
+    items: list[UserSubscriptionOut]

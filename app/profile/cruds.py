@@ -8,20 +8,16 @@
 
 from typing import Any
 from fastapi import HTTPException, UploadFile
-from sqlalchemy import and_, or_
 from app.access_control.cruds import get_group_by_name
-from app.mixins.commons import Gender
-from app.mixins.schemas import OrderType
 from app.user.cruds import update_user, create_user_account, delete_user
-from app.user.models import User
 from app.utils.crud_util import CrudUtil
 from app.profile import models, schemas
-from app.user.schemas import UserIn, UserSchema
-from app.utils.custom_validators import UpStr, make_capitalize
-from app.utils.user import get_password_hash
+from app.user.schemas import  UserSchema
 from app.utils.image_qr import (
     upload_image_file_to_cloud,
 )
+from datetime import datetime, date, timedelta
+from app.mixins.commons import DateRange
 
 # ====================[ Private ]====================
 
@@ -435,13 +431,14 @@ def search_corporate(
         limit=search.limit,
         order=search.order,
     )
+
+
 # ====================[ Subject ]====================
 
 def create_subject(
     cu: CrudUtil,
     subject_data: schemas.SubjectCreate
 ) -> models.Subject:
-    cu.ensure_unique_model(models.Subject, {"name": subject_data.name})
     subject: models.Subject = cu.create_model(models.Subject, subject_data)
     return subject
 
@@ -489,6 +486,64 @@ def delete_subject(
 ) -> dict[str, Any]:
     return cu.delete_model(
         model_to_delete=models.Subject,
+        delete_conditions={"uuid": uuid}
+    )
+
+
+# ====================[ Framework ]====================
+
+def create_framework(
+    cu: CrudUtil,
+    framework_data: schemas.FrameworkCreate
+) -> models.Framework:
+    cu.ensure_unique_model(models.Framework, {"name": framework_data.name})
+    framework: models.Framework = cu.create_model(models.Framework, framework_data)
+    return framework
+
+
+def get_framework_by_uuid(
+    cu: CrudUtil,
+    uuid: str
+) -> models.Framework:
+    framework: models.Framework = cu.get_model_or_404(
+        models.Framework,
+        {"uuid": uuid}
+    )
+    return framework
+
+
+def update_framework(
+    cu: CrudUtil,
+    uuid: str,
+    update_data: schemas.FrameworkUpdate,
+) -> models.Framework:
+    framework: models.Framework = cu.update_model(
+        model_to_update=models.Framework,
+        update=update_data,
+        update_conditions={"uuid": uuid}
+    )
+    return framework
+
+
+def list_framework(
+    cu: CrudUtil,
+    skip: int,
+    limit: int,
+) -> schemas.FrameworkList:
+    framework: dict[str, Any] = cu.list_model(
+        model_to_list=models.Framework,
+        skip=skip,
+        limit=limit
+    )
+    return schemas.FrameworkList(**framework)
+
+
+def delete_framework(
+    cu: CrudUtil,
+    uuid: str,
+) -> dict[str, Any]:
+    return cu.delete_model(
+        model_to_delete=models.Framework,
         delete_conditions={"uuid": uuid}
     )
 
@@ -562,4 +617,194 @@ def delete_class(cu: CrudUtil, uuid: str) -> dict[str, Any]:
     return cu.delete_model(
         model_to_delete=models.Class,
         delete_conditions={"uuid": uuid}
+    )
+
+
+# ====================[ Subscription ]====================
+
+def create_subscription(
+    cu: CrudUtil,
+    subscription: schemas.SubscriptionIn
+) -> schemas.SubscriptionOut | models.Subscription:
+    db_subscription: models.Subscription = cu.create_model(
+        models.Subscription,
+        subscription
+    )
+
+    return db_subscription
+
+
+def get_subscription_by_uuid(
+    cu: CrudUtil,
+    uuid: str,
+) -> models.Subscription:
+    subscription: models.Subscription = cu.get_model_or_404(
+        models.Subscription,
+        {"uuid": uuid}
+    )
+    return subscription
+
+
+def list_subscription(
+    cu: CrudUtil,
+    filter: schemas.SubscriptionFilter
+) -> Any:
+    # Get the current date and time
+    current_datetime = datetime.now()
+
+    return cu.list_model(
+        models.Subscription,
+        filter.model_dump(exclude_unset=True)
+    )
+
+
+def update_subscription(
+    cu: CrudUtil,
+    uuid: str,
+    update_data: schemas.SubscriptionUpdate,
+) -> models.Subscription:
+    subscription: models.Subscription = cu.update_model(
+        model_to_update=models.Subscription,
+        update=update_data,
+        update_conditions={"uuid": uuid}
+    )
+    if update_data.subjects:
+        subscription.subjects = get_subject_by_uuid(cu, uuid=update_data.subjects)
+    if update_data.framework:
+        subscription.framework = get_framework_by_uuid(cu, uuid=update_data.framework)
+
+    cu.db.commit()
+    cu.db.refresh(subscription)
+
+    return subscription
+
+
+def search_subscription(
+    cu: CrudUtil,
+    search: schemas.SubscriptionSearch
+) -> Any:
+    return cu.search_model(
+        models.Subscription,
+        search.search,
+        search.search_fields,
+        skip=search.skip,
+        limit=search.limit,
+        order=search.order
+    )
+
+
+def delete_subscription(
+    cu: CrudUtil,
+    uuid: str,
+) -> dict[str, Any]:
+    return cu.delete_model(
+        model_to_delete=models.Subscription,
+        delete_conditions={"uuid": uuid}
+    )
+
+
+# ====================[ Subscription Plan ]====================
+
+def create_subscription_plan(
+    cu: CrudUtil,
+    plan: schemas.SubscriptionPlanIn
+) -> schemas.SubscriptionPlanOut | models.SubscriptionPlan:
+    new_plan: models.SubscriptionPlan = cu.create_model(
+        models.SubscriptionPlan,
+        plan
+    )
+    return new_plan
+
+
+def get_subscription_plan_by_uuid(
+    cu: CrudUtil,
+    uuid: str
+) -> schemas.SubscriptionPlanOut:
+    plan: models.SubscriptionPlan = cu.get_model_or_404(
+        models.SubscriptionPlan,
+        {"uuid": uuid}
+    )
+    return plan
+
+
+def list_subscription_plans(
+    cu: CrudUtil,
+    filter: schemas.SubscriptionPlanFilter
+) -> Any:
+    return cu.list_model(
+        models.SubscriptionPlan,
+        filter.model_dump(exclude_unset=True)
+    )
+
+
+def update_subscription_plan(
+    cu: CrudUtil,
+    uuid: str,
+    update_plan: schemas.SubscriptionPlanUpdate
+) -> models.SubscriptionPlan:
+    plan: models.SubscriptionPlan = cu.update_model(
+        model_to_update=models.SubscriptionPlan,
+        update=update_plan,
+        update_conditions={"uuid": uuid}
+    )
+
+    if update_plan.subscription:
+        plan.subscription = get_subscription_by_uuid(cu, uuid=update_plan.subscription)
+
+    cu.db.commit()
+    cu.db.refresh(plan)
+
+    return plan
+
+
+def delete_subscription_plan(
+    cu: CrudUtil,
+    uuid: str
+) -> dict[str, Any]:
+    return cu.delete_model(
+        model_to_delete=models.SubscriptionPlan,
+        delete_conditions={"uuid": uuid}
+    )
+
+
+# ====================[ User Subscription ]====================
+
+def create_user_subscription(
+    cu: CrudUtil,
+    subscription: schemas.UserSubscriptionIn,
+) -> schemas.UserSubscriptionOut | models.UserSubscription:
+    new_subscription: models.UserSubscription = cu.create_model(
+        models.UserSubscription,
+        subscription
+    )
+    return new_subscription
+
+
+def get_user_subscription_by_uuid(
+    cu: CrudUtil,
+    uuid: str
+) -> schemas.UserSubscriptionOut:
+    subscription: models.UserSubscription = cu.get_model_or_404(
+        models.UserSubscription,
+        {"uuid": uuid}
+    )
+    return subscription
+
+
+def list_user_subscription(
+    cu: CrudUtil,
+    filter: schemas.UserSubscriptionFilter
+) -> Any:
+    current_date = date.today()
+    from_date = current_date - timedelta(days=365)
+    to_date = current_date
+    date_range = DateRange(
+        column_name='end_date', 
+        from_date=from_date, 
+        to_date=to_date
+    )
+    return cu.list_model(
+        models.UserSubscription,
+        filter.model_dump(exclude_unset=True),
+        date_range=date_range,
     )

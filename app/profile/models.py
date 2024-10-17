@@ -10,12 +10,18 @@ from typing import Any
 from sqlalchemy import (
     Column,
     String,
-    ForeignKey, Table,
+    Integer,
+    ForeignKey,
+    Table,
+    Time,
+    Date,
+    Numeric,
+    Boolean
 )
-
-from app.mixins.columns import BaseMixin, BaseModelMixin, BaseUACMixin
+from app.mixins.columns import BaseMixin
 from app.config.database import Base
 from sqlalchemy.orm import relationship
+from datetime import datetime, timedelta
 
 # Many to many associations
 subject_class = Table(
@@ -52,15 +58,14 @@ class Individual(BaseMixin, Base):
     qualification = Column(String(255), nullable=True)
     programme = Column(String(255), nullable=True)
     skills = Column(String(255), nullable=True)
-    # school = Column(String(255), nullable=True)
-    # classroom = Column(String(255), nullable=True)
-    # subject = Column(String(255), nullable=True)
 
     user: Any = relationship("User", lazy="joined", foreign_keys=[user_id])
     country: Any = relationship("Country", lazy="joined", foreign_keys=[country_id])
     state: Any = relationship("State", lazy="joined", foreign_keys=[state_id])
     lga: Any = relationship("LocalGovernment", lazy="joined", foreign_keys=[lga_id])
     employers: Any = relationship("Corporate", secondary=individual_corporate, back_populates="employees", uselist=True)
+
+    subscriptions = relationship("UserSubscription", back_populates="individual")
 
 
 class Corporate(BaseMixin, Base):
@@ -84,6 +89,8 @@ class Corporate(BaseMixin, Base):
     state: Any = relationship("State", lazy="joined", foreign_keys=[state_id])
     lga: Any = relationship("LocalGovernment", lazy="joined", foreign_keys=[lga_id])
 
+    subscriptions = relationship("UserSubscription", back_populates="corporate")
+
 
 class Class(BaseMixin, Base):
     name = Column(String(255), nullable=False)
@@ -94,3 +101,52 @@ class Class(BaseMixin, Base):
 class Subject(BaseMixin, Base):
     name = Column(String(255), nullable=False)
     description = Column(String(255))
+
+
+class Framework(BaseMixin, Base):
+    name = Column(String(255), nullable=False)
+    description = Column(String(255))
+
+
+class Subscription(BaseMixin, Base):
+    subject_id = Column(String(45), ForeignKey("subjects.uuid"), nullable=True)
+    framework_id = Column(String(45), ForeignKey("frameworks.uuid"), nullable=True)
+    audience = Column(String(255), nullable=False)
+    title = Column(String(255), nullable=False)
+    description = Column(String(1000))
+    update_type = Column(String(255), nullable=False)
+    mode = Column(String(255), nullable=False)
+    reference = Column(String(2048), nullable=True)
+    levels = Column(String(255), nullable=True)
+    skills = Column(String(1000), nullable=True)
+    image_url = Column(String(2048), nullable=True)
+    video_url = Column(String(2048), nullable=True)
+    scheduled_date = Column(Date, nullable=True)
+    scheduled_time = Column(Time, nullable=True)
+    subscription_target = Column(String(255), nullable=True)
+
+    plans = relationship("SubscriptionPlan", back_populates="subscription")
+
+    subjects: Any = relationship("Subject", lazy="joined", foreign_keys=[subject_id])
+    framework: Any = relationship("Framework", lazy="joined", foreign_keys=[framework_id])
+
+
+class SubscriptionPlan(BaseMixin, Base):    
+    subscription_id = Column(String(45), ForeignKey("subscriptions.uuid"), nullable=False)
+    name = Column(String(255), nullable=False)
+    duration = Column(String, nullable=False)
+    price = Column(Numeric(10, 2), nullable=False)
+
+    subscription = relationship("Subscription", back_populates="plans")
+
+
+class UserSubscription(BaseMixin, Base):
+    individual_id = Column(String, ForeignKey("individuals.uuid"), nullable=True)
+    corporate_id = Column(String, ForeignKey("corporates.uuid"), nullable=True)
+    subscription_plan_id = Column(String, ForeignKey("subscriptionplans.uuid"), nullable=False)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+
+    individual: Any = relationship("Individual", lazy="joined")
+    corporate: Any = relationship("Corporate", lazy="joined")
+    subscription_plan: Any = relationship("SubscriptionPlan", lazy="joined")

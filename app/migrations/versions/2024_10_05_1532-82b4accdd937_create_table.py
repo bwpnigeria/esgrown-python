@@ -1,8 +1,8 @@
-"""added corporate model
+"""create table
 
-Revision ID: 78c5b94bf47a
+Revision ID: 82b4accdd937
 Revises: 
-Create Date: 2024-09-09 21:09:00.740027
+Create Date: 2024-10-05 15:32:15.927734
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '78c5b94bf47a'
+revision = '82b4accdd937'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,11 +27,23 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('name'),
     sa.UniqueConstraint('uuid')
     )
     op.create_index(op.f('ix_classes_created_at'), 'classes', ['created_at'], unique=False)
     op.create_index(op.f('ix_classes_date'), 'classes', ['date'], unique=False)
+    op.create_table('frameworks',
+    sa.Column('name', sa.String(length=255), nullable=False),
+    sa.Column('description', sa.String(length=255), nullable=True),
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('uuid', sa.String(length=50), nullable=False),
+    sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('uuid')
+    )
+    op.create_index(op.f('ix_frameworks_created_at'), 'frameworks', ['created_at'], unique=False)
+    op.create_index(op.f('ix_frameworks_date'), 'frameworks', ['date'], unique=False)
     op.create_table('groups',
     sa.Column('name', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=True),
@@ -97,7 +109,6 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('name'),
     sa.UniqueConstraint('uuid')
     )
     op.create_index(op.f('ix_subjects_created_at'), 'subjects', ['created_at'], unique=False)
@@ -129,21 +140,6 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_created_at'), 'users', ['created_at'], unique=False)
     op.create_index(op.f('ix_users_date'), 'users', ['date'], unique=False)
-    op.create_table('corporates',
-    sa.Column('user_id', sa.String(length=45), nullable=False),
-    sa.Column('name', sa.String(length=255), nullable=False),
-    sa.Column('account_type', sa.String(length=100), nullable=False),
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('uuid', sa.String(length=50), nullable=False),
-    sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['users.uuid'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('uuid')
-    )
-    op.create_index(op.f('ix_corporates_created_at'), 'corporates', ['created_at'], unique=False)
-    op.create_index(op.f('ix_corporates_date'), 'corporates', ['date'], unique=False)
     op.create_table('countries',
     sa.Column('name', sa.String(length=45), nullable=False),
     sa.Column('created_by', sa.String(length=50), nullable=False),
@@ -177,17 +173,39 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['class_id'], ['classes.uuid'], ),
     sa.ForeignKeyConstraint(['subject_id'], ['subjects.uuid'], )
     )
+    op.create_table('subscriptions',
+    sa.Column('subject_id', sa.String(length=45), nullable=True),
+    sa.Column('framework_id', sa.String(length=45), nullable=True),
+    sa.Column('audience', sa.String(length=255), nullable=False),
+    sa.Column('title', sa.String(length=255), nullable=False),
+    sa.Column('description', sa.String(length=1000), nullable=True),
+    sa.Column('update_type', sa.String(length=255), nullable=False),
+    sa.Column('mode', sa.String(length=255), nullable=False),
+    sa.Column('reference', sa.String(length=2048), nullable=True),
+    sa.Column('levels', sa.String(length=255), nullable=True),
+    sa.Column('skills', sa.String(length=1000), nullable=True),
+    sa.Column('image_url', sa.String(length=2048), nullable=True),
+    sa.Column('video_url', sa.String(length=2048), nullable=True),
+    sa.Column('scheduled_date', sa.Date(), nullable=True),
+    sa.Column('scheduled_time', sa.Time(), nullable=True),
+    sa.Column('subscription_target', sa.String(length=255), nullable=True),
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('uuid', sa.String(length=50), nullable=False),
+    sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['framework_id'], ['frameworks.uuid'], ),
+    sa.ForeignKeyConstraint(['subject_id'], ['subjects.uuid'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('uuid')
+    )
+    op.create_index(op.f('ix_subscriptions_created_at'), 'subscriptions', ['created_at'], unique=False)
+    op.create_index(op.f('ix_subscriptions_date'), 'subscriptions', ['date'], unique=False)
     op.create_table('user_group',
     sa.Column('group_id', sa.String(length=50), nullable=True),
     sa.Column('user_id', sa.String(length=50), nullable=True),
     sa.ForeignKeyConstraint(['group_id'], ['groups.uuid'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.uuid'], )
-    )
-    op.create_table('class_corporate',
-    sa.Column('class_id', sa.String(length=50), nullable=True),
-    sa.Column('corporate_id', sa.String(length=50), nullable=True),
-    sa.ForeignKeyConstraint(['class_id'], ['classes.uuid'], ),
-    sa.ForeignKeyConstraint(['corporate_id'], ['corporates.uuid'], )
     )
     op.create_table('states',
     sa.Column('name', sa.String(length=45), nullable=False),
@@ -206,6 +224,22 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_states_created_at'), 'states', ['created_at'], unique=False)
     op.create_index(op.f('ix_states_date'), 'states', ['date'], unique=False)
+    op.create_table('subscriptionplans',
+    sa.Column('subscription_id', sa.String(length=45), nullable=False),
+    sa.Column('name', sa.String(length=255), nullable=False),
+    sa.Column('duration', sa.Integer(), nullable=False),
+    sa.Column('price', sa.Numeric(precision=10, scale=2), nullable=False),
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('uuid', sa.String(length=50), nullable=False),
+    sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['subscription_id'], ['subscriptions.uuid'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('uuid')
+    )
+    op.create_index(op.f('ix_subscriptionplans_created_at'), 'subscriptionplans', ['created_at'], unique=False)
+    op.create_index(op.f('ix_subscriptionplans_date'), 'subscriptionplans', ['date'], unique=False)
     op.create_table('localgovernments',
     sa.Column('name', sa.String(length=45), nullable=False),
     sa.Column('state_id', sa.String(length=45), nullable=False),
@@ -225,24 +259,47 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_localgovernments_created_at'), 'localgovernments', ['created_at'], unique=False)
     op.create_index(op.f('ix_localgovernments_date'), 'localgovernments', ['date'], unique=False)
+    op.create_table('corporates',
+    sa.Column('user_id', sa.String(length=45), nullable=False),
+    sa.Column('country_id', sa.String(length=45), nullable=True),
+    sa.Column('state_id', sa.String(length=45), nullable=True),
+    sa.Column('lga_id', sa.String(length=45), nullable=True),
+    sa.Column('name', sa.String(length=255), nullable=False),
+    sa.Column('address', sa.String(length=255), nullable=True),
+    sa.Column('account_type', sa.String(length=100), nullable=False),
+    sa.Column('delivery_level', sa.String(length=255), nullable=True),
+    sa.Column('secondary_contacts', sa.String(length=255), nullable=True),
+    sa.Column('head', sa.String(length=255), nullable=True),
+    sa.Column('head_contact', sa.String(length=255), nullable=True),
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('uuid', sa.String(length=50), nullable=False),
+    sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['country_id'], ['countries.uuid'], ),
+    sa.ForeignKeyConstraint(['lga_id'], ['localgovernments.uuid'], ),
+    sa.ForeignKeyConstraint(['state_id'], ['states.uuid'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.uuid'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('uuid')
+    )
+    op.create_index(op.f('ix_corporates_created_at'), 'corporates', ['created_at'], unique=False)
+    op.create_index(op.f('ix_corporates_date'), 'corporates', ['date'], unique=False)
     op.create_table('individuals',
     sa.Column('user_id', sa.String(length=45), nullable=False),
     sa.Column('country_id', sa.String(length=45), nullable=True),
     sa.Column('state_id', sa.String(length=45), nullable=True),
     sa.Column('lga_id', sa.String(length=45), nullable=True),
     sa.Column('address', sa.String(length=255), nullable=True),
-    sa.Column('date_of_birth', sa.String(length=45), nullable=False),
+    sa.Column('date_of_birth', sa.String(length=45), nullable=True),
     sa.Column('gender', sa.String(length=16), nullable=False),
     sa.Column('account_type', sa.String(length=100), nullable=False),
     sa.Column('photo', sa.String(length=255), nullable=True),
     sa.Column('profession', sa.String(length=255), nullable=True),
-    sa.Column('qualification', sa.String(length=255), nullable=True),
     sa.Column('institution', sa.String(length=255), nullable=True),
+    sa.Column('qualification', sa.String(length=255), nullable=True),
     sa.Column('programme', sa.String(length=255), nullable=True),
     sa.Column('skills', sa.String(length=255), nullable=True),
-    sa.Column('school', sa.String(length=255), nullable=True),
-    sa.Column('classroom', sa.String(length=255), nullable=True),
-    sa.Column('subject', sa.String(length=255), nullable=True),
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('uuid', sa.String(length=50), nullable=False),
     sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
@@ -257,31 +314,72 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_individuals_created_at'), 'individuals', ['created_at'], unique=False)
     op.create_index(op.f('ix_individuals_date'), 'individuals', ['date'], unique=False)
+    op.create_table('class_corporate',
+    sa.Column('class_id', sa.String(length=50), nullable=True),
+    sa.Column('corporate_id', sa.String(length=50), nullable=True),
+    sa.ForeignKeyConstraint(['class_id'], ['classes.uuid'], ),
+    sa.ForeignKeyConstraint(['corporate_id'], ['corporates.uuid'], )
+    )
+    op.create_table('individual_corporate',
+    sa.Column('individual_id', sa.String(length=50), nullable=True),
+    sa.Column('corporate_id', sa.String(length=50), nullable=True),
+    sa.ForeignKeyConstraint(['corporate_id'], ['corporates.uuid'], ),
+    sa.ForeignKeyConstraint(['individual_id'], ['individuals.uuid'], )
+    )
+    op.create_table('usersubscriptions',
+    sa.Column('individual_id', sa.String(), nullable=True),
+    sa.Column('corporate_id', sa.String(), nullable=True),
+    sa.Column('subscription_plan_id', sa.String(), nullable=False),
+    sa.Column('start_date', sa.Date(), nullable=False),
+    sa.Column('end_date', sa.Date(), nullable=False),
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('uuid', sa.String(length=50), nullable=False),
+    sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['corporate_id'], ['corporates.uuid'], ),
+    sa.ForeignKeyConstraint(['individual_id'], ['individuals.uuid'], ),
+    sa.ForeignKeyConstraint(['subscription_plan_id'], ['subscriptionplans.uuid'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('uuid')
+    )
+    op.create_index(op.f('ix_usersubscriptions_created_at'), 'usersubscriptions', ['created_at'], unique=False)
+    op.create_index(op.f('ix_usersubscriptions_date'), 'usersubscriptions', ['date'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f('ix_usersubscriptions_date'), table_name='usersubscriptions')
+    op.drop_index(op.f('ix_usersubscriptions_created_at'), table_name='usersubscriptions')
+    op.drop_table('usersubscriptions')
+    op.drop_table('individual_corporate')
+    op.drop_table('class_corporate')
     op.drop_index(op.f('ix_individuals_date'), table_name='individuals')
     op.drop_index(op.f('ix_individuals_created_at'), table_name='individuals')
     op.drop_table('individuals')
+    op.drop_index(op.f('ix_corporates_date'), table_name='corporates')
+    op.drop_index(op.f('ix_corporates_created_at'), table_name='corporates')
+    op.drop_table('corporates')
     op.drop_index(op.f('ix_localgovernments_date'), table_name='localgovernments')
     op.drop_index(op.f('ix_localgovernments_created_at'), table_name='localgovernments')
     op.drop_table('localgovernments')
+    op.drop_index(op.f('ix_subscriptionplans_date'), table_name='subscriptionplans')
+    op.drop_index(op.f('ix_subscriptionplans_created_at'), table_name='subscriptionplans')
+    op.drop_table('subscriptionplans')
     op.drop_index(op.f('ix_states_date'), table_name='states')
     op.drop_index(op.f('ix_states_created_at'), table_name='states')
     op.drop_table('states')
-    op.drop_table('class_corporate')
     op.drop_table('user_group')
+    op.drop_index(op.f('ix_subscriptions_date'), table_name='subscriptions')
+    op.drop_index(op.f('ix_subscriptions_created_at'), table_name='subscriptions')
+    op.drop_table('subscriptions')
     op.drop_table('subject_class')
     op.drop_table('role_group')
     op.drop_table('permission_role')
     op.drop_index(op.f('ix_countries_date'), table_name='countries')
     op.drop_index(op.f('ix_countries_created_at'), table_name='countries')
     op.drop_table('countries')
-    op.drop_index(op.f('ix_corporates_date'), table_name='corporates')
-    op.drop_index(op.f('ix_corporates_created_at'), table_name='corporates')
-    op.drop_table('corporates')
     op.drop_index(op.f('ix_users_date'), table_name='users')
     op.drop_index(op.f('ix_users_created_at'), table_name='users')
     op.drop_table('users')
@@ -300,6 +398,9 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_groups_date'), table_name='groups')
     op.drop_index(op.f('ix_groups_created_at'), table_name='groups')
     op.drop_table('groups')
+    op.drop_index(op.f('ix_frameworks_date'), table_name='frameworks')
+    op.drop_index(op.f('ix_frameworks_created_at'), table_name='frameworks')
+    op.drop_table('frameworks')
     op.drop_index(op.f('ix_classes_date'), table_name='classes')
     op.drop_index(op.f('ix_classes_created_at'), table_name='classes')
     op.drop_table('classes')

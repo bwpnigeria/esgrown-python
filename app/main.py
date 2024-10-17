@@ -59,8 +59,14 @@ app.include_router(lga_router.lga_router)
 # Profile
 app.include_router(individual_router.individual_router)
 app.include_router(individual_router.corporate_router)
+
+# classes and subject
 app.include_router(individual_router.class_router)
 app.include_router(individual_router.subject_router)
 
-# Helper
-# app.include_router(alumni_router.helper_router)
+# subscription and frameworks
+app.include_router(individual_router.subscription_router)
+app.include_router(individual_router.subscription_plan_router)
+app.include_router(individual_router.framework_router)
+app.include_router(individual_router.user_subscriptoin_router)
+

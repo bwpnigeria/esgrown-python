@@ -38,6 +38,31 @@ class_router = APIRouter(
     tags=["Class Routes"],
 )
 
+subscription_router = APIRouter(
+    prefix="/subscription",
+    tags=["Subscription Routes"],
+)
+
+subscription_plan_router = APIRouter(
+    prefix="/subscription_plan",
+    tags=["Subscription Plan Routes"]
+)
+
+user_subscriptoin_router = APIRouter(
+    prefix="/user-subscription",
+    tags=["User Subscription Routes"]
+)
+
+framework_router = APIRouter(
+    prefix="/framework",
+    tags=["Framework Routes"],
+)
+
+payment_router = APIRouter(
+    prefix="/payment",
+    tags=["Payment Routes"]
+)
+
 
 # ======================[ Individual ]=======================
 
@@ -219,7 +244,7 @@ async def update_own_corporate(
     "/{uuid}",
     dependencies=[Depends(HasPermission(["admin:delete_corporate"]))],
 )
-async def delete_corporate(
+def delete_corporate(
     *,
     cu: CrudUtil = Depends(CrudUtil),
     uuid: str,
@@ -302,6 +327,71 @@ def delete_subject(
     uuid: str,
 ) -> dict[str, Any]:
     return cruds.delete_subject(cu, uuid)
+
+
+# ================ Framework ================
+
+@framework_router.post(
+    "",
+    dependencies=[Depends(HasPermission(["framework:create"]))],
+)
+async def create_framework(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    framework_data: schemas.FrameworkCreate
+) -> schemas.FrameworkSchema:
+    return cruds.create_framework(cu, framework_data)
+
+
+@framework_router.get(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["framework:read"]))],
+)
+def framework_detail(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> schemas.FrameworkSchema:
+    return cruds.get_framework_by_uuid(cu, uuid)
+
+
+@framework_router.put(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["framework:update"]))],
+)
+def update_framework(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+    framework_data: schemas.FrameworkUpdate,
+) -> schemas.FrameworkSchema:
+    return cruds.update_framework(cu, uuid, framework_data)
+
+
+@framework_router.get(
+    "",
+    dependencies=[Depends(HasPermission(["framework:list"]))],
+)
+def framework_list(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    skip: int = 0,
+    limit: int = 100,
+) -> schemas.FrameworkList:
+    return cruds.list_framework(cu, skip, limit)
+
+
+@framework_router.delete(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["framework:delete"]))],
+)
+def delete_framework(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> dict[str, Any]:
+    return cruds.delete_framework(cu, uuid)
+
 
 
 # ================ Classes ================
@@ -388,3 +478,186 @@ def remove_subject_from_class(
     cu.db.commit()
     cu.db.refresh(db_class)
     return db_class
+
+
+# ================ Subscription ================
+
+
+@subscription_router.post(
+    "",
+    dependencies=[Depends(HasPermission(["subscription:create"]))],
+)
+async def create_subscription(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    subscription: schemas.SubscriptionIn
+) -> schemas.SubscriptionOut:
+    return cruds.create_subscription(cu, subscription)
+
+
+@subscription_router.get(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["subscription:read"]))],
+)
+def subscription_detail(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> schemas.SubscriptionOut:
+    return cruds.get_subscription_by_uuid(cu, uuid)
+
+
+@subscription_router.get(
+    "",
+    dependencies=[Depends(HasPermission(["subscription:list"]))],
+    response_model=schemas.SubscriptionList,
+)
+async def subscription_list(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    filter: schemas.SubscriptionFilter = Depends(),
+) -> Any:
+    return cruds.list_subscription(cu, filter)
+
+
+@subscription_router.put(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["subscription:update"]))],
+)
+def update_subscription(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+    update_data: schemas.SubscriptionUpdate,
+) -> schemas.SubscriptionOut:
+    return cruds.update_subscription(cu, uuid, update_data)
+
+
+@subscription_router.get(
+    "/search/all/subscription",
+    dependencies=[Depends(HasPermission(["subscription:search"]))],
+    response_model=schemas.SubscriptionList,
+)
+async def search_subscription(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    search: schemas.SubscriptionSearch = Depends()
+) -> Any:
+    return cruds.search_subscription(cu, search)
+
+
+@subscription_router.delete(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["subscription:delete"]))],
+)
+def delete_subscription(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str
+) -> dict[str, Any]:
+    return cruds.delete_subscription(cu, uuid)
+
+
+# ======================[ Subscription Plan ]=======================
+
+@subscription_plan_router.post(
+    "",
+    dependencies=[Depends(HasPermission(["subscription_plan:create"]))]
+)
+async def create_subscription_plan(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    plan: schemas.SubscriptionPlanIn
+) -> schemas.SubscriptionPlanOut:
+    return cruds.create_subscription_plan(cu, plan)
+
+
+@subscription_plan_router.get(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["subscription_plan:read"]))],
+)
+def subscription_plan_detail(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str
+) -> schemas.SubscriptionPlanOut:
+    return cruds.get_subscription_plan_by_uuid(cu, uuid)
+
+
+@subscription_plan_router.get(
+    "",
+    dependencies=[Depends(HasPermission(["subscription_plan:list"]))],
+    response_model=schemas.SubscriptionPlanList
+)
+def subscription_plan_list(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    filter: schemas.SubscriptionPlanFilter = Depends()
+) -> Any:
+    return cruds.list_subscription_plans(cu, filter)
+
+
+@subscription_plan_router.put(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["subscription_plan:update"]))],
+)
+def update_subscription_plan(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+    update_plan: schemas.SubscriptionPlanUpdate
+) -> schemas.SubscriptionPlanOut:
+    return cruds.update_subscription_plan(cu, uuid, update_plan)
+
+
+@subscription_plan_router.delete(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["subscription_plan:delete"]))]
+)
+def delete_subscription_plan(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str
+) -> dict[str, Any]:
+    return cruds.delete_subscription_plan(cu, uuid)
+
+
+# ======================[ User Subscription ]=======================
+
+@user_subscriptoin_router.post(
+    "",
+    dependencies=[Depends(HasPermission(["user_subscription:create"]))]
+)
+async def create_user_subscription(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    subscription: schemas.UserSubscriptionIn,
+) -> schemas.UserSubscriptionOut:
+    return cruds.create_user_subscription(cu, subscription)
+
+
+@user_subscriptoin_router.get(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["user_subscription:read"]))]
+)
+def user_subscription_detail(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str
+) -> schemas.UserSubscriptionOut:
+    return cruds.get_user_subscription_by_uuid(cu, uuid)
+
+
+@user_subscriptoin_router.get(
+    "",
+    dependencies=[Depends(HasPermission(["subscription_plan:list"]))],
+    response_model=schemas.UserSubscriptionList
+)
+def user_subscription_list(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    filter: schemas.UserSubscriptionFilter = Depends(),
+) -> Any:
+    return cruds.list_user_subscription(cu, filter)
+
+
