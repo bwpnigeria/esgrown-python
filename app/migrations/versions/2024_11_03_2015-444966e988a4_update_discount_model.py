@@ -1,16 +1,16 @@
-"""create table
+"""update discount model
 
-Revision ID: 82b4accdd937
+Revision ID: 444966e988a4
 Revises: 
-Create Date: 2024-10-05 15:32:15.927734
+Create Date: 2024-11-03 20:15:20.264136
 
 """
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '82b4accdd937'
+revision = '444966e988a4'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -31,6 +31,21 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_classes_created_at'), 'classes', ['created_at'], unique=False)
     op.create_index(op.f('ix_classes_date'), 'classes', ['date'], unique=False)
+    op.create_table('discounts',
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('percentage', sa.Integer(), nullable=True),
+    sa.Column('used_by_users', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('uuid', sa.String(length=50), nullable=False),
+    sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name'),
+    sa.UniqueConstraint('uuid')
+    )
+    op.create_index(op.f('ix_discounts_created_at'), 'discounts', ['created_at'], unique=False)
+    op.create_index(op.f('ix_discounts_date'), 'discounts', ['date'], unique=False)
     op.create_table('frameworks',
     sa.Column('name', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=True),
@@ -207,6 +222,12 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['group_id'], ['groups.uuid'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.uuid'], )
     )
+    op.create_table('country_discount',
+    sa.Column('country_id', sa.String(length=50), nullable=True),
+    sa.Column('discount_id', sa.String(length=50), nullable=True),
+    sa.ForeignKeyConstraint(['country_id'], ['countries.uuid'], ),
+    sa.ForeignKeyConstraint(['discount_id'], ['discounts.uuid'], )
+    )
     op.create_table('states',
     sa.Column('name', sa.String(length=45), nullable=False),
     sa.Column('country_id', sa.String(length=45), nullable=False),
@@ -226,14 +247,16 @@ def upgrade() -> None:
     op.create_index(op.f('ix_states_date'), 'states', ['date'], unique=False)
     op.create_table('subscriptionplans',
     sa.Column('subscription_id', sa.String(length=45), nullable=False),
+    sa.Column('discount_id', sa.String(length=45), nullable=True),
     sa.Column('name', sa.String(length=255), nullable=False),
-    sa.Column('duration', sa.Integer(), nullable=False),
+    sa.Column('duration', sa.String(), nullable=False),
     sa.Column('price', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('uuid', sa.String(length=50), nullable=False),
     sa.Column('date', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('last_modified', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['discount_id'], ['discounts.uuid'], ),
     sa.ForeignKeyConstraint(['subscription_id'], ['subscriptions.uuid'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('uuid')
@@ -259,6 +282,18 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_localgovernments_created_at'), 'localgovernments', ['created_at'], unique=False)
     op.create_index(op.f('ix_localgovernments_date'), 'localgovernments', ['date'], unique=False)
+    op.create_table('state_discount',
+    sa.Column('state_id', sa.String(length=50), nullable=True),
+    sa.Column('discount_id', sa.String(length=50), nullable=True),
+    sa.ForeignKeyConstraint(['discount_id'], ['discounts.uuid'], ),
+    sa.ForeignKeyConstraint(['state_id'], ['states.uuid'], )
+    )
+    op.create_table('city_discount',
+    sa.Column('localgovernment_id', sa.String(length=50), nullable=True),
+    sa.Column('discount_id', sa.String(length=50), nullable=True),
+    sa.ForeignKeyConstraint(['discount_id'], ['discounts.uuid'], ),
+    sa.ForeignKeyConstraint(['localgovernment_id'], ['localgovernments.uuid'], )
+    )
     op.create_table('corporates',
     sa.Column('user_id', sa.String(length=45), nullable=False),
     sa.Column('country_id', sa.String(length=45), nullable=True),
@@ -361,6 +396,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_corporates_date'), table_name='corporates')
     op.drop_index(op.f('ix_corporates_created_at'), table_name='corporates')
     op.drop_table('corporates')
+    op.drop_table('city_discount')
+    op.drop_table('state_discount')
     op.drop_index(op.f('ix_localgovernments_date'), table_name='localgovernments')
     op.drop_index(op.f('ix_localgovernments_created_at'), table_name='localgovernments')
     op.drop_table('localgovernments')
@@ -370,6 +407,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_states_date'), table_name='states')
     op.drop_index(op.f('ix_states_created_at'), table_name='states')
     op.drop_table('states')
+    op.drop_table('country_discount')
     op.drop_table('user_group')
     op.drop_index(op.f('ix_subscriptions_date'), table_name='subscriptions')
     op.drop_index(op.f('ix_subscriptions_created_at'), table_name='subscriptions')
@@ -401,6 +439,9 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_frameworks_date'), table_name='frameworks')
     op.drop_index(op.f('ix_frameworks_created_at'), table_name='frameworks')
     op.drop_table('frameworks')
+    op.drop_index(op.f('ix_discounts_date'), table_name='discounts')
+    op.drop_index(op.f('ix_discounts_created_at'), table_name='discounts')
+    op.drop_table('discounts')
     op.drop_index(op.f('ix_classes_date'), table_name='classes')
     op.drop_index(op.f('ix_classes_created_at'), table_name='classes')
     op.drop_table('classes')

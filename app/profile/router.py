@@ -7,16 +7,20 @@
 # @Version : 1.0.0
 
 
+from datetime import datetime, timezone
+from dateutil.relativedelta import relativedelta
 from typing import Any
-from fastapi import APIRouter, Body, Depends, File, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, UploadFile, Request
 from app.user.schemas import UserSchema
-
+from app.config.config import settings
+import requests
 from app.profile import schemas, cruds, models
 from app.utils.crud_util import CrudUtil
 from app.dependencies.dependencies import (
     HasPermission,
     get_current_user,
 )
+from decimal import Decimal
 
 individual_router = APIRouter(
     prefix="/individual",
@@ -61,6 +65,11 @@ framework_router = APIRouter(
 payment_router = APIRouter(
     prefix="/payment",
     tags=["Payment Routes"]
+)
+
+discount_router = APIRouter(
+    prefix="/discount",
+    tags=["Discount Routes"]
 )
 
 
@@ -661,3 +670,236 @@ def user_subscription_list(
     return cruds.list_user_subscription(cu, filter)
 
 
+# ======================[ payment ]=======================
+
+@payment_router.post("/create-payment-url")
+async def create_paystack_payment_url(
+    uuid: str,
+    coupon_code: str = None,
+    user: UserSchema = Depends(get_current_user),
+    cu: CrudUtil = Depends(CrudUtil),
+):
+    headers = {
+        "Authorization": f"Bearer {settings.paystack_secret_key}",
+        "Content-Type": "application/json"
+    }
+
+    subscription = cruds.get_subscription_plan_by_uuid(cu, uuid)
+    if not subscription:
+        raise HTTPException(status_code=400, detail="Unable to create Paystack payment URL")
+    
+    if coupon_code:
+        discount = cruds.get_discount_by_name(cu, name=coupon_code)
+        if not discount:
+            raise HTTPException(status_code=400, detail="Invalid coupon code")
+        
+        try:
+            discount_percentage = Decimal(str(discount.percentage))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid discount percentage value")
+        
+        discount_amount = (subscription.price * discount_percentage) / 100
+        amount = int((subscription.price - discount_amount) * 100)
+    else:
+        amount = int(subscription.price * 100)
+
+    payload = {
+        "email": user.email,
+        "amount": amount
+    }
+
+    response = requests.post(
+        settings.paystack_payment_url,
+        json=payload,
+        headers=headers
+    )
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=400, detail="Unable to create Paystack payment URL")
+
+    response_data = response.json()
+    print(response_data)
+    
+    if not response_data.get("status"):
+        raise HTTPException(status_code=400, detail="Failed to initialize Paystack payment")
+    
+    payment_url = response_data["data"]["authorization_url"]
+
+    return {"payment_url": payment_url}
+
+
+@payment_router.get("/thirdparty-payment-verify")
+async def verify_paystack_payment(
+    reference: str,
+    plan_uuid: str,
+    user: UserSchema = Depends(get_current_user),
+    cu: CrudUtil = Depends(CrudUtil),
+):
+    headers = {
+        "Authorization": f"Bearer {settings.paystack_secret_key}",
+        "Content-Type": "application/json",
+    }
+
+    verification_url = f"{settings.paystack_verify_url}/{reference}"
+    response = requests.get(verification_url, headers=headers)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=400, detail="Failed to verify payment")
+
+    response_data = response.json()
+
+    if not response_data.get("status") or response_data["data"]["status"] != "success":
+        raise HTTPException(status_code=400, detail="Payment verification failed")
+    
+    subscription_plan = cruds.get_subscription_plan_by_uuid(cu, plan_uuid)
+    if not subscription_plan:
+        raise HTTPException(status_code=400, detail="Payment verification failed")
+
+    if int(response_data["data"]['requested_amount']) != (subscription_plan.price * 100):
+        raise HTTPException(status_code=400, detail="Payment verification failed")
+    
+    # Determine start and end dates based on plan duration
+    start_date = datetime.now(timezone.utc).date()
+    
+    # Calculate end date based on subscription plan duration
+    duration = subscription_plan.duration.lower()
+
+    match duration:
+        case "monthly":
+            end_date = start_date + relativedelta(months=1)
+        case "quarterly":
+            end_date = start_date + relativedelta(months=3)
+        case "biannual":
+            end_date = start_date + relativedelta(months=6)
+        case "annually":
+            end_date = start_date + relativedelta(years=1)
+        case _:
+            raise HTTPException(status_code=400, detail="Invalid subscription duration")
+
+    # Attempt to fetch the individual profile
+    try:
+        individual = cruds.get_own_profile(cu, user)
+    except Exception as e:
+        pass
+    # Attempt to fetch the corporate profile
+    try:
+        corporate = cruds.get_own_corporate(cu, user)
+    except Exception as e:
+        pass
+
+    account_type = ''
+    if individual:
+        account_type = 'individual'
+    elif corporate:
+        account_type = 'corporate'
+
+    individual_id = individual.uuid if account_type == 'individual' else None
+    corporate_id = corporate.uuid if account_type == 'corporate' else None
+
+    subscription_data = schemas.UserSubscriptionIn(
+        individual_id=individual_id,
+        corporate_id=corporate_id,
+        subscription_plan_id=subscription_plan.uuid,
+        start_date=start_date,
+        end_date=end_date
+    )
+
+    user_subscription = cruds.create_user_subscription(cu, subscription_data)
+    
+    return {
+        "message": "Payment verified successfully",
+        "payment_details": response_data["data"],
+        "user_subscription": user_subscription
+    }
+
+
+# ======================[ Discount ]=======================
+
+@discount_router.post(
+    "",
+    dependencies=[Depends(HasPermission(["discount:create"]))]
+)
+async def create_discount(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    discount: schemas.DiscountIn,
+) -> schemas.DiscountOut:
+    return cruds.create_discount(cu, discount)
+
+
+@discount_router.get(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["discount:read"]))]
+)
+def discount_detail(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str
+) -> schemas.DiscountOut:
+    return cruds.get_discount_by_uuid(cu, uuid)
+
+@discount_router.get(
+    "/name/{name}",
+    dependencies=[Depends(HasPermission(["discount:read"]))]
+)
+def discount_detail_by_name(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    name: str
+) -> schemas.DiscountOut:
+    return cruds.get_discount_by_name(cu, name)
+
+
+@discount_router.get(
+    "",
+    dependencies=[Depends(HasPermission(["discount:list"]))],
+    response_model=schemas.DiscountList
+)
+def discount_list(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    skip: int = 0,
+    limit: int = 100,
+) -> schemas.DiscountList:
+    return cruds.list_discount(cu, skip, limit)
+
+
+@discount_router.put(
+    '/{uuid}',
+    dependencies=[Depends(HasPermission(["discount:update"]))],
+)
+def update_discount(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    discount_data: schemas.UpdateDiscount,
+    uuid: str
+) -> schemas.DiscountOut:
+    return cruds.update_discount(cu, uuid, discount_data)
+
+
+@discount_router.delete(
+    "/{uuid}",
+    dependencies=[Depends(HasPermission(["discount:delete"]))]
+)
+def delete_discount(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str
+) -> dict[str, Any]:
+    return cruds.delete_discount(cu, uuid)
+
+
+# {
+#   "name": "TEST3000",
+#   "percentage": 20,
+#   "plans": [
+#     "01JBSSQ3SBB41P8QXYQMTJVEZC"
+#   ],
+#   "countries": [
+#     "01JBSS68TPE86025MT1APF5QDH"
+#   ],
+#   "states": [
+#     "01JBSS6QYJ894X4Y69Q96CW0FH"
+#   ],
+#   "cities": null
+# }

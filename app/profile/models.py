@@ -21,7 +21,7 @@ from sqlalchemy import (
 from app.mixins.columns import BaseMixin
 from app.config.database import Base
 from sqlalchemy.orm import relationship
-from datetime import datetime, timedelta
+from sqlalchemy.dialects.postgresql import JSONB
 
 # Many to many associations
 subject_class = Table(
@@ -34,11 +34,25 @@ class_corporate = Table(
     Column('class_id', String(length=50), ForeignKey('classes.uuid')),
     Column('corporate_id', String(length=50), ForeignKey('corporates.uuid')),
 )
-
 individual_corporate = Table(
     'individual_corporate', Base.metadata,
     Column('individual_id', String(length=50), ForeignKey('individuals.uuid'), nullable=True),
     Column('corporate_id', String(length=50), ForeignKey('corporates.uuid'), nullable=True),
+)
+country_discount = Table(
+    'country_discount', Base.metadata,
+    Column('country_id', String(length=50), ForeignKey('countries.uuid'), nullable=True),
+    Column('discount_id', String(length=50), ForeignKey('discounts.uuid'), nullable=True),
+)
+state_discount = Table(
+    'state_discount', Base.metadata,
+    Column('state_id', String(length=50), ForeignKey('states.uuid'), nullable=True),
+    Column('discount_id', String(length=50), ForeignKey('discounts.uuid'), nullable=True),
+)
+city_discount = Table(
+    'city_discount', Base.metadata,
+    Column('localgovernment_id', String(length=50), ForeignKey('localgovernments.uuid'), nullable=True),
+    Column('discount_id', String(length=50), ForeignKey('discounts.uuid'), nullable=True),
 )
 
 
@@ -133,11 +147,13 @@ class Subscription(BaseMixin, Base):
 
 class SubscriptionPlan(BaseMixin, Base):    
     subscription_id = Column(String(45), ForeignKey("subscriptions.uuid"), nullable=False)
+    discount_id = Column(String(45), ForeignKey("discounts.uuid"), nullable=True)
     name = Column(String(255), nullable=False)
     duration = Column(String, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
 
     subscription = relationship("Subscription", back_populates="plans")
+    discount = relationship("Discount", back_populates="plans")
 
 
 class UserSubscription(BaseMixin, Base):
@@ -150,3 +166,14 @@ class UserSubscription(BaseMixin, Base):
     individual: Any = relationship("Individual", lazy="joined")
     corporate: Any = relationship("Corporate", lazy="joined")
     subscription_plan: Any = relationship("SubscriptionPlan", lazy="joined")
+
+
+class Discount(BaseMixin, Base):
+    name = Column(String, unique=True, nullable=False)
+    percentage = Column(Integer, default=0) 
+    used_by_users = Column(JSONB, default=list, nullable=True)
+
+    plans = relationship("SubscriptionPlan", back_populates="discount")
+    countries: Any = relationship("Country", secondary=country_discount, uselist=True)
+    states: Any = relationship("State", secondary=state_discount, uselist=True)
+    cities: Any = relationship("LocalGovernment", secondary=city_discount, uselist=True)

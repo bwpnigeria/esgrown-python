@@ -6,6 +6,7 @@
 # @Link    : link
 # @Version : 1.0.0
 from typing import AnyStr, Any
+from uuid import UUID
 from datetime import date
 from app.mixins.schemas import (
     BaseModelIn,
@@ -18,7 +19,7 @@ from app.mixins.schemas import (
 from app.user.schemas import UserAccountIn, UserSchema, UserUpdate, UserUpdateSelf
 from app.utils.custom_validators import LowStr
 from app.mixins.commons import ListBase, UserMin
-from app.lga.schemas import LocalGovernmentMin, StateMin, CountryMin
+from app.lga.schemas import LocalGovernmentMin, StateMin, CountryMin, CountryOut
 from app.utils.enums import Gender, AccounType, CooporateType, SubscriptionType, SubscriptionMode, SubscriptionTarget, SubscriptionPlan
 from app.user.models import User
 
@@ -26,6 +27,7 @@ from pydantic import (
     BaseModel,
     computed_field,
     Field,
+    conint
 )
 
 from decimal import Decimal
@@ -560,3 +562,37 @@ class UserSubscriptionOut(BaseModelMin):
 
 class UserSubscriptionList(ListBase):
     items: list[UserSubscriptionOut]
+
+
+# ====================[ Discount ]====================
+
+class DiscountIn(BaseModelIn):
+    name: str
+    percentage: Decimal
+    plans: list[str]
+    countries: list[str] | None = None
+    states: list[str] | None = None
+    cities: list[str] | None = None
+
+
+class UpdateDiscount(BaseModelIn):
+    name: str | None = None
+    percentage: Decimal | None = None
+    used_by_users: list[str] | None = None
+    plans: list[str] | None = None
+    countries: list[str] | None = None
+    states: list[str] | None = None
+    cities: list[str] | None = None
+
+
+class DiscountOut(BaseModelMin):
+    name: str
+    percentage: Decimal
+    plans: list[SubscriptionPlanMin] | None = None
+    countries: list[CountryOut] | None = None
+    states: list[StateMin] | None = None
+    cities: list[LocalGovernmentMin] | None = None
+
+
+class DiscountList(ListBase):
+    items: list[DiscountOut]

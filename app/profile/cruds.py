@@ -18,6 +18,7 @@ from app.utils.image_qr import (
 )
 from datetime import datetime, date, timedelta
 from app.mixins.commons import DateRange
+from app.lga.cruds import get_country, get_state, get_local_government
 
 # ====================[ Private ]====================
 
@@ -807,4 +808,184 @@ def list_user_subscription(
         models.UserSubscription,
         filter.model_dump(exclude_unset=True),
         date_range=date_range,
+    )
+
+
+# ====================[ Discount ]====================
+
+def create_discount(
+    cu: CrudUtil,
+    discount_data: schemas.DiscountIn
+) -> models.Discount:
+    
+    plans = []
+    if discount_data.plans:
+        for plan_uuid in discount_data.plans:
+            plan = get_subscription_plan_by_uuid(cu, uuid=plan_uuid)
+            if plan:
+                plans.append(plan)
+            else:
+                raise HTTPException(status_code=404, detail=f"Subscription plan not found")
+
+    countries = []
+    if discount_data.countries:
+        for country_uuid in discount_data.countries:
+            country = get_country(cu, uuid=country_uuid)
+            if country:
+                countries.append(country)
+            else:
+                raise HTTPException(status_code=404, detail=f"Country not found")
+
+    states = []
+    if discount_data.states:
+        for state_uuid in discount_data.states:
+            state = get_state(cu, uuid=state_uuid)
+            if state:
+                states.append(state)
+            else:
+                raise HTTPException(status_code=404, detail=f"State not found")
+
+    cities = []
+    if discount_data.cities:
+        for city_uuid in discount_data.cities:
+            city = get_local_government(cu, uuid=city_uuid)
+            if city:
+                cities.append(city)
+            else:
+                raise HTTPException(status_code=404, detail=f"City not found")
+
+    discount = models.Discount(
+        name=discount_data.name,
+        percentage=discount_data.percentage,
+        plans=plans,
+        countries=countries,
+        states=states,
+        cities=cities
+    )
+
+    cu.db.add(discount)
+    cu.db.commit()
+    cu.db.refresh(discount)
+    
+    return discount
+
+    # {
+    #     "name": "TEST100",
+    #     "percentage": 20,
+    #     "plans": [
+    #         "01JBSSQ3SBB41P8QXYQMTJVEZC"
+    #     ],
+    #     "countries": [
+    #         "01JBSS68TPE86025MT1APF5QDH"
+    #     ],
+    #     "states": [
+    #         "01JBSS6QYJ894X4Y69Q96CW0FH"
+    #     ],
+    #     "cities": [
+    #         "01JBSSBPAEBMF3JKFT4S2AASEN"
+    #     ]
+    # }
+
+
+def get_discount_by_uuid(
+    cu: CrudUtil,
+    uuid: str
+) -> schemas.DiscountOut:
+    discount: models.Discount = cu.get_model_or_404(
+        models.Discount,
+        {"uuid": uuid}
+    )
+    return discount
+
+
+def get_discount_by_name(
+    cu: CrudUtil,
+    name: str
+) -> schemas.DiscountOut:
+    discount: models.Discount = cu.get_model_or_404(
+       model_to_get=models.Discount,
+       model_conditions={"name": name}
+    )
+    return discount
+
+
+def list_discount(cu: CrudUtil, skip: int, limit: int) -> schemas.DiscountList:
+    discounts: dict[str, Any] = cu.list_model(
+        model_to_list=models.Discount,
+        skip=skip,
+        limit=limit
+    )
+
+    return schemas.DiscountList(**discounts)
+
+
+def update_discount(
+    cu: CrudUtil,
+    uuid: str,
+    discount_data: schemas.UpdateDiscount
+) -> models.Discount:
+    
+    discount = get_discount_by_uuid(cu, uuid)
+    if not discount:
+        raise HTTPException(status_code=404, detail="Discount not found")
+
+    if discount_data.name is not None:
+        discount.name = discount_data.name
+
+    if discount_data.percentage is not None:
+        discount.percentage = discount_data.percentage
+
+    if discount_data.plans is not None:
+        plans = []
+        for plan_uuid in discount_data.plans:
+            plan = get_subscription_plan_by_uuid(cu, uuid=plan_uuid)
+            if plan:
+                plans.append(plan)
+            else:
+                raise HTTPException(status_code=404, detail=f"Subscription plan not found")
+        discount.plans = plans
+
+    if discount_data.countries is not None:
+        countries = []
+        for country_uuid in discount_data.countries:
+            country = get_country(cu, uuid=country_uuid)
+            if country:
+                countries.append(country)
+            else:
+                raise HTTPException(status_code=404, detail=f"Country not found")
+        discount.countries = countries
+
+    if discount_data.states is not None:
+        states = []
+        for state_uuid in discount_data.states:
+            state = get_state(cu, uuid=state_uuid)
+            if state:
+                states.append(state)
+            else:
+                raise HTTPException(status_code=404, detail=f"State not found")
+        discount.states = states
+
+    if discount_data.cities is not None:
+        cities = []
+        for city_uuid in discount_data.cities:
+            city = get_local_government(cu, uuid=city_uuid)
+            if city:
+                cities.append(city)
+            else:
+                raise HTTPException(status_code=404, detail=f"City not found")
+        discount.cities = cities
+
+    cu.db.commit()
+    cu.db.refresh(discount)
+    
+    return discount
+
+
+def delete_discount(
+    cu: CrudUtil,
+    uuid: str
+) -> dict[str, Any]:
+    return cu.delete_model(
+        model_to_delete=models.Discount,
+        delete_conditions={"uuid": uuid}
     )

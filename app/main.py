@@ -69,4 +69,6 @@ app.include_router(individual_router.subscription_router)
 app.include_router(individual_router.subscription_plan_router)
 app.include_router(individual_router.framework_router)
 app.include_router(individual_router.user_subscriptoin_router)
+app.include_router(individual_router.payment_router)
+app.include_router(individual_router.discount_router)
 
